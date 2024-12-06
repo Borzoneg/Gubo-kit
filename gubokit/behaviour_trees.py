@@ -4,8 +4,7 @@ import matplotlib.patches as patches
 import numpy as np
 import time
 from numpy import ndarray
-from send_str_clt import SendStrClient
-
+from ros import SendStrClient
 
 class BtViewer():
     def __init__(self, tree:pt.trees.BehaviourTree, blackboard: pt.blackboard.Client = None, figsize: tuple[float, float] = (18,3),
