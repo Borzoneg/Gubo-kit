@@ -1,0 +1,4 @@
+# python temp files removal
+__pycache__/
+*.py[cod]
+*$py.class
