@@ -46,7 +46,6 @@ class ServicesPlaceholder(Node):
         response.ans = "failure"   
         self.get_logger().info("Responding FAILURE")
         return response
-    
 
 class SendStrClient(Node):
     """
@@ -83,7 +82,6 @@ class SendStrClient(Node):
         rclpy.spin_until_future_complete(self, self.future)
         return self.future.result()
 
-
 class PosePublisher(Node):
     def __init__(self, topic_name: str):
         super().__init__('PosePublisher')
@@ -100,7 +98,6 @@ class PosePublisher(Node):
         msg.orientation.w = float(sm.SO3(T.R).UnitQuaternion().vec_xyzs[3])
         self.publisher.publish(msg)
         # self.get_logger().info('Publishing: "%s"' % msg)
-
 
 class PoseArrayPublisher(Node):
     def __init__(self, topic_name: str):
@@ -124,7 +121,6 @@ class PoseArrayPublisher(Node):
             msg.poses.append(pose)
         self.publisher.publish(msg)
         # self.get_logger().info('Publishing: "%s"' % msg)
-
 
 class PointCloudPublisher(Node):
 
@@ -156,7 +152,6 @@ class PointCloudPublisher(Node):
         self.msg.channels[0].values = list(np.full(len(cloud), self.channel_value))
         self.publisher.publish(self.msg)
 
-
 class JointPublisher(Node):
     def __init__(self, topic_name: str):
         super().__init__('JointPublisher')
@@ -182,7 +177,6 @@ class JointPublisher(Node):
             self.send_joint(q)
             time.sleep(time_step)
 
-
 class JointSubscriber(Node):
     def __init__(self, topic_name):
         super().__init__('Joint_subscriber')
@@ -190,4 +184,3 @@ class JointSubscriber(Node):
 
     def listener_callback(self, msg):
         self.get_logger().info('I heard: "%s"' % msg)
-

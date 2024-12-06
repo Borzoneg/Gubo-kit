@@ -20,7 +20,6 @@ from roboticstoolbox.backends import PyPlot
 from collections import deque
 from scipy.interpolate import CubicSpline
 
-
 class RobotiqGripper:
     """
     Communicates with the gripper directly, via socket with string commands, leveraging string names for variables.
@@ -304,7 +303,6 @@ class RobotiqGripper:
         final_pos = self._get_var(self.POS)
         final_obj = cur_obj
         return final_pos, RobotiqGripper.ObjectStatus(final_obj)
-    
 
 class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
     """ Wrapper class for all robot robot_control functions
@@ -384,7 +382,6 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         self.gripper.move_and_wait_for_pos(255, 255, 100)
         self.servoStop()
 
-
 class Sphere():
     """Geometrical representation of a sphere
     """
@@ -414,8 +411,7 @@ class Sphere():
         x = (self.radius * np.cos(u) * np.sin(v)) + self.centre[0]    # Sphere's x coordinates
         y = (self.radius * np.sin(u) * np.sin(v)) + self.centre[1]    # Sphere's y coordinates
         z = (self.radius * np.cos(v)) + self.centre[2]               # Sphere's z coordinates
-        env.ax.plot_surface(x, y, z, color='r', alpha=0.2)
-
+        env.ax.plot_surface(x, y, z, color='r', alpha=0.5)
 
 class Box():
     def __init__(self, centre: tuple[float, float], length:float, width: float, heigth: float):
@@ -456,14 +452,13 @@ class Box():
         edges.append([list(zip(x, y, z))])
 
         for edge in edges:
-            env.ax.add_collection3d(Poly3DCollection(edge, alpha=0.3))
+            env.ax.add_collection3d(Poly3DCollection(edge, alpha=0.5))
         # for i, p in enumerate(verts):
             # print(p)
             # env.ax.scatter(p[0], p[1], p[2])
             # env.ax.text(p[0], p[1], p[2], str(i))
         
         # env.ax.voxels(data)
-
 
 class _RRT():
     class Node:
@@ -534,7 +529,6 @@ class _RRT():
         t_smooth = np.linspace(0, len(self.traj) - 1, num=num_points)
         self.traj = np.array([spline(t_smooth) for spline in splines]).T
 
- 
 class SimRobotBackend(ERobot):
     """Implementation of a robot trough a urdf file using rtb, usable standalone for debugging purpose, used by the SimRobot
     class for computations, inherit from roboticstoolbox.robot.Erobot.Erobot
@@ -569,7 +563,8 @@ class SimRobotBackend(ERobot):
         self.robot_base = robot_base
 
         self.use_j_limit = False
-        self.qlim = np.array([[float('-inf'), float('-inf'), float('-inf'), float('-inf'), float('-inf'), float('-inf')],
+        if self.qlim is None: # if the limits are not specified in the urdf
+            self.qlim = np.array([[float('-inf'), float('-inf'), float('-inf'), float('-inf'), float('-inf'), float('-inf')],
                               [ float('inf'),  float('inf'),  float('inf'),  float('inf'),  float('inf'),  float('inf')]])
 
     def set_joints_limit(self, limits: ndarray):
@@ -644,7 +639,7 @@ class SimRobotBackend(ERobot):
                 return True
             for obj_id, obj in enumerate(self.collision_objs): # check every sphere added
                 if obj.point_is_inside(t):
-                    # print(f"Collision with sphere {sphere_id} limits in joint {i}")
+                    # print(f"Collision with {type(obj)} {obj_id} limits in joint {i}")
                     return True
         return False
     
@@ -664,7 +659,7 @@ class SimRobotBackend(ERobot):
             return True
         for obj_id, obj in enumerate(self.collision_objs): # check every sphere added
             if obj.point_is_inside(T.t):
-                print(f"Pose in collision with sphere {obj_id}")
+                print(f"Pose in collision with {type(obj)} {obj_id}")
                 return True
         return False
 
@@ -682,7 +677,7 @@ class SimRobotBackend(ERobot):
         traj = rtb.jtraj(q0=q0, qf=qf, t=t)
         return traj
 
-    def ik_collision_free(self, Tep: sm.SE3, n_trials: int = 50000, q0: ndarray = None) -> tuple[bool, ndarray]:
+    def ik_collision_free(self, Tep: sm.SE3, n_trials: int = 50, q0: ndarray = None) -> tuple[bool, ndarray]:
         """Generate a inverse kinematics collision fre solution for the pose Tep
 
         Args:
@@ -701,7 +696,6 @@ class SimRobotBackend(ERobot):
         starting_q = q0
         if not self.check_pose_collisions(T): # if the point itself is in collision then we don't even try
             while not sol_valid and trial < n_trials: # otherwise we try n_trials time
-                # sol = self.ikine_LM(T, q0=q0) # generating the solution
                 sol = self.ik_LM(T, q0=starting_q, joint_limits=self.use_j_limit) # generating the solution
                 if sol[1]: # if there is an ik solution
                     sol_valid = not self.check_joint_collisions(sol[0]) # we check it, if it's not in collision sol_valid become true and we exit the loop 
@@ -817,64 +811,64 @@ class SimRobotBackend(ERobot):
             if hold:
                 self.env.hold()
 
-    def gen_rings_poses(self, obj_pose:sm.SE3, radius, h_res=8, v_res=5):
-        u = np.linspace(0, np.pi*2, h_res+1)[1:] # the +1 is to get to the actual number
-        v = np.linspace(np.pi/6, np.pi-np.pi/6, v_res)
-        poses = deque()
-        for phi in v:
-            for theta in u: 
-                x = (np.sin(phi) * np.cos(theta)) * radius
-                y = (np.sin(phi) * np.sin(theta)) * radius
-                z = (np.cos(phi)) * radius
-                direction_vector = np.array([-x, -y, -z])
-                direction_vector /= np.linalg.norm(direction_vector)
-                z_angle = np.arctan2(direction_vector[1], direction_vector[0])
-                y_angle = np.arctan2(np.sqrt(direction_vector[0]**2 + direction_vector[1]**2), direction_vector[2])
-                Rot_mat = sm.SO3.Rz(z_angle)* sm.SO3.Ry(y_angle) * sm.SO3.Rx(0)
-                T = sm.SE3().Rt(Rot_mat, np.array([x, y, z]))
-                T = obj_pose * T 
-                poses.append(T)
-            u = u[::-1]
-        return poses
-
-    def gen_arc_poses(self, obj_pose:sm.SE3, radius, h_res=1, v_res=10):
-        theta = 0
-        v = np.linspace(np.pi/6, np.pi-np.pi/6, v_res+2)
-        arc = []
-        for phi in v:
-            if abs(phi) == np.pi : # we don't want to hit the pole we remove pi
-                continue
-            x = ((np.sin(phi) * np.cos(theta)) * radius)
-            y = ((np.sin(phi) * np.sin(theta)) * radius)
-            z = ((np.cos(phi)) * radius)
+def gen_rings_poses(obj_pose:sm.SE3, radius, h_res=8, v_res=5, stretch=1):
+    u = np.linspace(0, np.pi*2, h_res+1)[1:] # the +1 is to get to the actual number
+    v = np.linspace(np.pi/6, np.pi-np.pi/6, v_res)
+    poses = deque()
+    for phi in v:
+        for theta in u: 
+            x = (np.sin(phi) * np.cos(theta)) * radius * stretch # to "flatten" the ellipsoid increase this
+            y = (np.sin(phi) * np.sin(theta)) * radius * stretch # to "flatten" the ellipsoid increase this
+            z = (np.cos(phi)) * radius
             direction_vector = np.array([-x, -y, -z])
             direction_vector /= np.linalg.norm(direction_vector)
-
             z_angle = np.arctan2(direction_vector[1], direction_vector[0])
             y_angle = np.arctan2(np.sqrt(direction_vector[0]**2 + direction_vector[1]**2), direction_vector[2])
             Rot_mat = sm.SO3.Rz(z_angle)* sm.SO3.Ry(y_angle) * sm.SO3.Rx(0)
-            Rot_mat = Rot_mat * sm.SO3.Rz(np.pi/2) # to flip x and y axis for the scanner
             T = sm.SE3().Rt(Rot_mat, np.array([x, y, z]))
             T = obj_pose * T 
-            arc.append(T)
-        return arc
-    
-    def gen_s_poses(self, obj_pose:sm.SE3, radius, num_points: int=25):
-        ts = np.linspace(-2*np.pi, 2*np.pi, num_points)
-        s = []
-        i = 0
-        for t in ts:
-            z = 0.8*t/(2*np.pi) * radius
-            y = np.sin(t)*0.5 * radius
-            x = abs(np.sqrt(radius**2 - z**2 - y**2))
-            direction_vector = np.array([-x, -y, -z])
-            direction_vector /= np.linalg.norm(direction_vector)
+            poses.append(T)
+        u = u[::-1]
+    return poses
 
-            z_angle = np.arctan2(direction_vector[1], direction_vector[0])
-            y_angle = np.arctan2(np.sqrt(direction_vector[0]**2 + direction_vector[1]**2), direction_vector[2])
-            Rot_mat = sm.SO3.Rz(z_angle)* sm.SO3.Ry(y_angle) * sm.SO3.Rx(0)
-            Rot_mat = Rot_mat * sm.SO3.Rz(np.pi/2) # to flip x and y axis for the scanner
-            T = sm.SE3().Rt(Rot_mat, np.array([x, y, z]))
-            T = obj_pose * T 
-            s.append(T)
-        return s
+def gen_arc_poses(obj_pose:sm.SE3, radius, h_res=1, v_res=10):
+    theta = 0
+    v = np.linspace(np.pi/6, np.pi-np.pi/6, v_res+2)
+    arc = []
+    for phi in v:
+        if abs(phi) == np.pi : # we don't want to hit the pole we remove pi
+            continue
+        x = ((np.sin(phi) * np.cos(theta)) * radius)
+        y = ((np.sin(phi) * np.sin(theta)) * radius)
+        z = ((np.cos(phi)) * radius)
+        direction_vector = np.array([-x, -y, -z])
+        direction_vector /= np.linalg.norm(direction_vector)
+
+        z_angle = np.arctan2(direction_vector[1], direction_vector[0])
+        y_angle = np.arctan2(np.sqrt(direction_vector[0]**2 + direction_vector[1]**2), direction_vector[2])
+        Rot_mat = sm.SO3.Rz(z_angle)* sm.SO3.Ry(y_angle) * sm.SO3.Rx(0)
+        Rot_mat = Rot_mat * sm.SO3.Rz(np.pi/2) # to flip x and y axis for the scanner
+        T = sm.SE3().Rt(Rot_mat, np.array([x, y, z]))
+        T = obj_pose * T 
+        arc.append(T)
+    return arc
+
+def gen_s_poses(obj_pose:sm.SE3, radius, num_points: int=25):
+    ts = np.linspace(-2*np.pi, 2*np.pi, num_points)
+    s = []
+    i = 0
+    for t in ts:
+        z = 0.8*t/(2*np.pi) * radius
+        y = np.sin(t)*0.5 * radius
+        x = abs(np.sqrt(radius**2 - z**2 - y**2))
+        direction_vector = np.array([-x, -y, -z])
+        direction_vector /= np.linalg.norm(direction_vector)
+
+        z_angle = np.arctan2(direction_vector[1], direction_vector[0])
+        y_angle = np.arctan2(np.sqrt(direction_vector[0]**2 + direction_vector[1]**2), direction_vector[2])
+        Rot_mat = sm.SO3.Rz(z_angle)* sm.SO3.Ry(y_angle) * sm.SO3.Rx(0)
+        Rot_mat = Rot_mat * sm.SO3.Rz(np.pi/2) # to flip x and y axis for the scanner
+        T = sm.SE3().Rt(Rot_mat, np.array([x, y, z]))
+        T = obj_pose * T 
+        s.append(T)
+    return s

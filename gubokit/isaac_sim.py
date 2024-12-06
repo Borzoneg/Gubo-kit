@@ -12,8 +12,8 @@ from PIL import Image, ImageDraw, ImageFont
 from omni.isaac.core.utils.types import ArticulationAction
 import omni.isaac.core.utils.numpy.rotations as rot_utils
 from omni.isaac.sensor import RotatingLidarPhysX
-from pointcloud_pub import PointCloudPublisher
-from robot_backend import SimRobotBackend
+from ros import PointCloudPublisher
+from robotics import SimRobotBackend
 from omni.isaac.core.robots import Robot
 from sensor_msgs.msg import JointState
 from collections import deque
@@ -53,7 +53,6 @@ def clean_data_repo(directory_path):
         for file_name in path_list:
             os.remove(path + file_name)
 
-
 class PoseSubscriber():
     def __init__(self, topic_name: str, world, prim_path: str = "/World/pose", ros_node: Node=None):
         self.ros_node = Node('Pose_subscriber_node') if ros_node is None else ros_node
@@ -80,7 +79,6 @@ class PoseSubscriber():
                                                     orientation=sm.SO3(T.R).UnitQuaternion(),
                                                     visible=True))
         return point_obj
-
 
 class PoseArraySubscriber():
     def __init__(self, topic_name: str, world, prim_path: str = "/World/pose", ros_node: Node=None):
@@ -117,7 +115,6 @@ class PoseArraySubscriber():
             print("removing: ", self.prim_path+ "_" + "{:04}".format(i))
             self.world.scene.remove_object(self.prim_path.split('/')[-1] + "_" + "{:04}".format(i))
         self.i = 0
-
 
 class SimulationGui(XFormPrim):
     def __init__(self, prim_path, world, name="gui", position = None, orientation=None):
@@ -448,7 +445,6 @@ class SimulationGui(XFormPrim):
         self.time_material.set_texture(os.environ['FLUENTLY_WS_PATH'] + "/props/prima_additiva_gui/" + filename + ".png")
         self.time_label.apply_visual_material(self.time_material)
 
-
 class _SimLidar(RotatingLidarPhysX):
     """Representation of a lidar sensor in isaac sim, inherit from RotatingLidarPhysX
     """
@@ -597,7 +593,6 @@ class _SimLidar(RotatingLidarPhysX):
             elif next_state == "reset":
                 self.reset_lidar_local()
 
-
 class _SimGripper():    
     def __init__(self, n_joints: int =2) -> None:
         self.phys_queue = deque()
@@ -625,7 +620,6 @@ class _SimGripper():
         if len(self.phys_queue) > 0:
             return self.phys_queue.popleft()
 
-
 class SimRobot(Robot):
     def __init__(self, robot_prim_path, urdf_file, name=None, position=None, orientation=None,
                  home_position=np.array([0, -np.pi/2, np.pi/2, -np.pi/2, -np.pi/2, 0]),  tcp_frame_urdf:str=None, 
@@ -638,7 +632,7 @@ class SimRobot(Robot):
         self.urdf_file = urdf_file
         self.home_position = home_position
         super().__init__(prim_path=robot_prim_path, name=name, position=position, orientation=orientation)
-        self.local_T_robot = sm.SE3.inv(sm.SE3.Rt(rot_utils.quats_to_rot_matrices(self.get_local_pose()[1]), self.get_local_pose()[0]))
+        self.local_T_robot = (sm.SE3.Rt(rot_utils.quats_to_rot_matrices(self.get_local_pose()[1]), self.get_local_pose()[0]))
         self.manipulator_controller = self.get_articulation_controller()
         self.backend = SimRobotBackend(urdf_file=urdf_file, tcp_frame_urdf=tcp_frame_urdf, x_free_space=x_free_space, 
                                        y_free_space=y_free_space, z_free_space=z_free_space, home_position=home_position,
@@ -661,7 +655,7 @@ class SimRobot(Robot):
                                step=step, visible=visible,ros_topic=ros_topic, frame_id=frame_id)
         world.scene.add(self.lidar)
 
-    def request_scan(self, pose_index):
+    def request_scan(self):
         scan_length = self.lidar.request_scan()
         self.stand_still(scan_length)
 
@@ -697,13 +691,13 @@ class SimRobot(Robot):
         """
         given a pose in world fram in form of 4x4 matrix gives back the pose in base frame of the robot
         """
-        return self.local_T_robot * T
+        return self.backend.world_T_robot(T)
     
     def robot_T_world(self, T: sm.SE3) -> sm.SE3:
         """
         given a pose in robot base frame in form of 4x4 matrix gives back the pose in base frame of the robot
         """
-        return  self.local_T_robot.inv() * T
+        return self.backend.robot_T_world(T)
 
     def move_to_joint_position(self, qf, t=200):
         qf = np.array(qf)
@@ -723,7 +717,7 @@ class SimRobot(Robot):
     def move_to_cart_position(self, T: sm.SE3, t=200, q0=None):
         if q0 is None:
             q0 = self.get_last_joint_positions()
-        sol_valid, sol = self.backend.ik_collision_free(T, q0=q0)
+        sol_valid, sol = self.backend.ik_collision_free(T, q0=q0)     
         if sol_valid:
             self.move_to_joint_position(sol[0], t)
         return sol_valid

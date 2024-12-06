@@ -170,7 +170,6 @@ class BtViewer():
         self.fig.canvas.flush_events()
         # self.fig.savefig("bt.png")
 
-
 class GenericBehaviour(pt.behaviour.Behaviour):
     """
     Most of the behaviors are doing the same thing: they send a service requests, wait for answer and change the 
