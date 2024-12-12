@@ -28,3 +28,17 @@ def parts_sums(ls):
     r.insert(0, 0)
     return r[::-1]
 
+def to_camel_case(text: str):
+    new_text = []
+    i, j = 0, 0
+    while i < len(text):
+        if text[i] == '-' or text[i] == '_':
+            new_text.append(text[i+1].upper())
+            i += 1
+        else:
+            new_text.append(text[i])
+        j += 1
+        i += 1
+    return ''.join(new_text)
+
+print(to_camel_case('the-stealth_warrior'))
