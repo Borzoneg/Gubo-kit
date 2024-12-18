@@ -3,6 +3,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-data/*
-!data/in/*.zip
+data/in/*
+data/out/*
 models/*
