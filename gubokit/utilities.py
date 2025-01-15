@@ -128,3 +128,6 @@ def view_clouds_in_folder():
     if ans == 'y':
         for filename in clouds:
             o3d.io.write_point_cloud(os.environ['FLUENTLY_WS_PATH'] + "/data/impeller_scans/" + filename, clouds[filename])
+
+def T_to_xyzrpy(T: sm.SE3):
+    return np.hstack((T.t, sm.SO3(T.R).eul()))

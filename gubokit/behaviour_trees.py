@@ -7,6 +7,8 @@ from numpy import ndarray
 from ros import SendStrClient
 
 class BtViewer():
+    """Viewer for a behvaiour tree, showing the tree as it runs
+    """
     def __init__(self, tree:pt.trees.BehaviourTree, blackboard: pt.blackboard.Client = None, figsize: tuple[float, float] = (18,3),
                  width_node: float = 0.6, height_node: float = 0.4, padding_node: list[float, float] = [0.1, 0.2]):
 
@@ -82,6 +84,16 @@ class BtViewer():
             self._draw_behaviour(behaviour=node, xy=xy, linewidth=linewidth, fontsize=fontsize)
 
     def _draw_composite(self, node: pt.composites.Composite, xy: tuple[float, float], fontsize: int, linewidth: int = 2):
+        """Draw a composite with different shapes and colors
+            sequence -> rectangle
+            selector -> ocatgon
+            parallel -> parallelogram
+        Args:
+            node (pt.composites.Composite): the node to draw
+            xy (tuple[float, float]): _description_
+            fontsize (int): _description_
+            linewidth (int, optional): _description_. Defaults to 2.
+        """
         if isinstance(node, pt.composites.Sequence):
             rect = patches.Rectangle(np.array(xy) - np.array([self.w_n/2, self.h_n/2]), self.w_n, self.h_n, linewidth=linewidth, edgecolor='black', facecolor='orange', zorder=2)
             self.ax.add_patch(rect)
@@ -100,11 +112,27 @@ class BtViewer():
             self.ax.annotate(node.name.replace("_", "\n"), (vertices.mean(axis=0)), color='black', fontsize=fontsize, ha='center', va='center')
 
     def _draw_behaviour(self, behaviour: pt.behaviour.Behaviour, xy: tuple[float, float], fontsize: int, linewidth: int = 2):
+        """Draw a single behaviour (rectangle)
+
+        Args:
+            behaviour (pt.behaviour.Behaviour): _description_
+            xy (tuple[float, float]): _description_
+            fontsize (int): _description_
+            linewidth (int, optional): _description_. Defaults to 2.
+        """
         rect = patches.Rectangle(np.array(xy) - np.array([self.w_n/2, self.h_n/2]), self.w_n, self.h_n, linewidth=linewidth, edgecolor='black', facecolor='gray', zorder=2)
         self.ax.add_patch(rect)
         self.ax.annotate(behaviour.name.replace("_", "\n"), np.array(xy), color='black', fontsize=fontsize, ha='center', va='center')
 
     def _draw_status(self, node):
+        """Fill the shape of the node with its current status
+           SUCCESS -> green
+           RUNNING -> yellow
+           FAILURE -> red
+
+        Args:
+            node (_type_): _description_
+        """
         if isinstance(node, pt.composites.Composite):
             for i, child in enumerate(node.children):
                 self._draw_status(node=child)
@@ -116,7 +144,6 @@ class BtViewer():
             self.node_status_patch[node.name].set_visible(False)
 
     def _generate_hexagon_verts(self, centre: tuple[float, float]) -> ndarray:
-        # width set the radius of the circle in which we inscribe the hexagon
         # verts = np.array(centre) + np.array([[ np.cos(np.pi), 0.0], [-np.cos(np.pi/4), np.sin(np.pi/4)], [ np.cos(np.pi/4), np.sin(np.pi/4)], [ np.cos(0), 0.0], [ np.cos(np.pi/4), -np.sin(np.pi/4)], [-np.cos(np.pi/4), -np.sin(np.pi/4)], ]) * width
         # width and height set the 4 points that would make a rectangle and then we find the two laying on x=0
         # verts = np.array(centre) + np.array([[-1/2, 1/2], [ 1/2, 1/2], [ 1, 0], [ 1/2, -1/2], [-1/2, -1/2], [ -1, 0], ]) * np.array([width, height])
@@ -135,7 +162,7 @@ class BtViewer():
         return verts
     
     def _generate_octagon_verts(self, centre: tuple[float, float], width: float, height: float) -> ndarray:
-        # width and height sets the rectangle we inscribe the ocatgon in
+        """ width and height sets the rectangle we inscribe the ocatgon in"""
         if width < height:
             print("Octagon generation impossible")
             return None
@@ -152,7 +179,7 @@ class BtViewer():
         return verts
     
     def _generate_parallelogram_verts(self, centre: tuple[float, float], width: float, height: float) -> ndarray:
-        # width and height sets the rectangle we inscribe the parallelogram in
+        """width and height sets the rectangle we inscribe the parallelogram in"""
         if width < height:
             print("Octagon generation impossible")
             return None
@@ -219,4 +246,3 @@ class GenericBehaviour(pt.behaviour.Behaviour):
             elif new_status == pt.common.Status.FAILURE:
                 self.status = new_status
                 self.blackboard.set(self.name, "failed")
-

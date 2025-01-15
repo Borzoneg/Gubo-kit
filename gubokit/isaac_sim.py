@@ -54,6 +54,8 @@ def clean_data_repo(directory_path):
             os.remove(path + file_name)
 
 class PoseSubscriber():
+    """Subscribe to a ros2 node and create a pose in isaac when a pose is published on the topic
+    """
     def __init__(self, topic_name: str, world, prim_path: str = "/World/pose", ros_node: Node=None):
         self.ros_node = Node('Pose_subscriber_node') if ros_node is None else ros_node
         self.ros_node.create_subscription(Pose, topic_name, self.spawn_pose_ros, 10)
@@ -81,6 +83,8 @@ class PoseSubscriber():
         return point_obj
 
 class PoseArraySubscriber():
+    """Subscribe to a ros2 node and create multiple poses in isaac when they are published on the topic
+    """
     def __init__(self, topic_name: str, world, prim_path: str = "/World/pose", ros_node: Node=None):
         self.ros_node = Node('Pose_array_subscriber_node') if ros_node is None else ros_node
         self.ros_node.create_subscription(PoseArray, topic_name, self.spawn_poses_ros, 10)
@@ -117,6 +121,12 @@ class PoseArraySubscriber():
         self.i = 0
 
 class SimulationGui(XFormPrim):
+    """A graphical user interface simulated in isaac sim environment with the use of textures and cubes
+    this clas is not general yet as it initiate the gui for the prima additiva use case
+
+    Args:
+        XFormPrim (_type_): _description_
+    """
     def __init__(self, prim_path, world, name="gui", position = None, orientation=None):
         super().__init__(prim_path, name, position=position, orientation=orientation)
 
@@ -454,7 +464,7 @@ class _SimLidar(RotatingLidarPhysX):
         """Create the lidar
 
         Args:
-            prim_path (str): prima path for the lidar
+            prim_path (str): prim path for the lidar
             data_path (str): path where the scans from the lidar will be saved, the class will create e subolder in this folder "scan" to generate the data
             world (World): the isaac sim world in which the sensor will be, this is mandatory as we need to take a step everytime we move the sensor to recollect the 3d data
             length_scan (float, optional): This represent the length the sensor travel everytime we perform a scan. Defaults to 0.08. 
@@ -502,10 +512,6 @@ class _SimLidar(RotatingLidarPhysX):
 
     def request_scan(self):
         """Setup the queue of the lidar so that we will perform a scan
-
-        Args:
-            pose_index (int): the pose idx which will be used to save the files
-
         Returns:
             int: how many steps in the simulation will it take to run the scan
         """
@@ -523,8 +529,6 @@ class _SimLidar(RotatingLidarPhysX):
         """
         current_x = self.get_local_pose()[0][0] - self.step
         self.set_local_pose(translation=[current_x, self.get_local_pose()[0][1], self.get_local_pose()[0][2]])
-        # self.world.step() # trigger the aquisition of data for the sensor
-        # self.add_point_cloud_data_to_frame() # this reset the data frame so we remove the old data
 
     def scan(self):
         """Take a single capture from the sensor and accumulate it in a growing  3d object for the entire pose
@@ -533,9 +537,6 @@ class _SimLidar(RotatingLidarPhysX):
         data = self.get_current_frame()["point_cloud"]
         data.reshape(data.shape[0], 3)
         data = data.squeeze()
-
-        # data = data[data[:, 0] < 0.57] # filter for things too far or too close
-        # data = data[0.5 < data[:, 0]] 
 
         cloud = o3d.geometry.PointCloud()
         cloud.points = o3d.utility.Vector3dVector(np.asarray(data))
@@ -548,9 +549,6 @@ class _SimLidar(RotatingLidarPhysX):
 
     def save(self, filename:str = ""):
         """Save the accumulated datas, every pose is composed by many scan, divided by step
-
-        Args:
-            id (int): the pose id for future reconstruction
         """
         # save the cloud
         o3d.io.write_point_cloud(os.environ['FLUENTLY_WS_PATH'] + "/data/impeller_scan.pts", self.total_cloud)
@@ -559,21 +557,25 @@ class _SimLidar(RotatingLidarPhysX):
         o3d.io.write_point_cloud(os.environ['FLUENTLY_WS_PATH'] + "/data/impeller_scans/" + filename + ".pts", self.total_cloud)
 
     def reset_cloud(self):
+        """Reset the total cloud variable and if we are publishing also the ros topic
+        """
         self.total_cloud = o3d.geometry.PointCloud()
         if self.ros_pub is not None:
             self.ros_pub.publish_cloud(np.array(self.total_cloud.points))
 
     def reset_lidar_local(self):
-        """Save the accumulated datas, every pose is composed by many scan, divided by step
-
-        Args:
-            id (int): the pose id for future reconstruction
+        """move the lidar back to where it started, if we are using a static lidar this has to be done after every scanned pose
         """
         self.set_local_pose(translation=[self.initial_x, self.get_local_pose()[0][1], self.get_local_pose()[0][2]])
 
     def extend_queue(self, length_extension: int = 1):
-        # if a lidar is attached to the robot, the queue for robot and lidar have to be same length at all time, when the
-        # robot add to itself a trajectory we als need to expand the lidar queue
+        """if a lidar is attached to the robot, the queue for robot and lidar have to be same length at all time, when the
+        robot add to itself a trajectory we als need to expand the lidar queue
+        Args:
+            length_extension (int, optional): the lenght of the extension(if we perform a trajectory of 50 on the robot 
+            we extend this by the same amouny). Defaults to 1.
+        """
+         
         self.state_queue.extend(np.full(length_extension, "stand"))
 
     def physisc_step(self):
@@ -593,13 +595,29 @@ class _SimLidar(RotatingLidarPhysX):
             elif next_state == "reset":
                 self.reset_lidar_local()
 
-class _SimGripper():    
+class _SimGripper():
+    """Simulated represantation of a gripper connected to a robot
+    """
     def __init__(self, n_joints: int =2) -> None:
+        """Init the gripper
+
+        Args:
+            n_joints (int, optional): the number of joints that the gripper uses. Defaults to 2.
+        """
         self.phys_queue = deque()
         self.n_joints = n_joints
         self.status = np.full(self.n_joints, 0)
 
     def close(self, step=50, force=0.5) -> int:
+        """Close the gripper with a specific force
+
+        Args:
+            step (int, optional): number of steps taken by the closing trajectory. Defaults to 50.
+            force (float, optional): Defaults to 0.5.
+
+        Returns:
+            int: the step required to close the gripper, this is needed to accordingly extend the robot trajectory
+        """
         traj = rtb.jtraj(self.status, np.full(self.n_joints, force), t=step)
         self.status = np.full(self.n_joints, force)
         for q in traj.q:
@@ -607,6 +625,14 @@ class _SimGripper():
         return traj.t.shape[0]
     
     def open(self, step=50) -> int:
+        """Open the gripper
+
+        Args:
+            step (int, optional): number of steps taken by the opening trajectory. Defaults to 50.
+
+        Returns:
+            int: the step required to open the gripper, this is needed to accordingly extend the robot trajectory
+        """
         traj = rtb.jtraj(self.status, np.full(self.n_joints, 0), t=step)
         self.status = np.full(self.n_joints, 0)
         for q in traj.q:
@@ -614,13 +640,27 @@ class _SimGripper():
         return traj.t.shape[0]
 
     def extend_queue(self, length_extension: int = 1):
-        self.phys_queue.extend(np.full(length_extension, self.status))
+        """If a gripper is connected they have to have the same lenght of the trajectory, whenever we extend the robot 
+        trajectory we also extend the gripper trajectory
+
+        Args:
+            length_extension (int, optional): the lenght of the extension(if we perform a trajectory of 50 on the robot 
+            we extend this by the same amouny). Defaults to 1.
+        """
+        for _ in range(length_extension):
+            self.phys_queue.append(self.status)
 
     def physisc_step(self):
+        """physics step for the gripper"""
         if len(self.phys_queue) > 0:
             return self.phys_queue.popleft()
 
 class SimRobot(Robot):
+    """_summary_
+
+    Args:
+        Robot (_type_): _description_
+    """
     def __init__(self, robot_prim_path, urdf_file, name=None, position=None, orientation=None,
                  home_position=np.array([0, -np.pi/2, np.pi/2, -np.pi/2, -np.pi/2, 0]),  tcp_frame_urdf:str=None, 
                  x_free_space: tuple = (float('-inf'), float('inf')), 
@@ -719,7 +759,7 @@ class SimRobot(Robot):
             q0 = self.get_last_joint_positions()
         sol_valid, sol = self.backend.ik_collision_free(T, q0=q0)     
         if sol_valid:
-            self.move_to_joint_position(sol[0], t)
+            self.move_to_joint_position(sol, t)
         return sol_valid
     
     def follow_frame(self, frame: XFormPrim):
@@ -788,12 +828,13 @@ class SimRobot(Robot):
         return success, traj
 
     def perform_trajectory(self, traj:list[ndarray]):
-        self.phys_queue.extend(traj)
+        trj = np.array(traj)
+        self.phys_queue.extend(trj)
         self.backend.q = self.phys_queue[-1]
         if self.gripper is not None:
-            self.gripper.extend_queue(traj.shape[0])
+            self.gripper.extend_queue(trj.shape[0])
         if self.lidar is not None:
-            self.lidar.extend_queue(traj.shape[0])
+            self.lidar.extend_queue(trj.shape[0])
         self.backend.q = self.get_last_joint_positions()
 
     def subscribe_to_topic(self, topic_name: str):
@@ -819,7 +860,5 @@ class SimRobot(Robot):
                 next_q = np.hstack((next_q, gripper_status))
             action = ArticulationAction(joint_positions=next_q)
             self.manipulator_controller.apply_action(action)
-        
         if self.lidar is not None:
             self.lidar.physisc_step()
-

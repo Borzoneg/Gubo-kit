@@ -462,10 +462,10 @@ class Box():
 
 class _RRT():
     class Node:
-        def __init__(self, q, nearest_q_idx):
+        def __init__(self, q, nearest_q_idx, parent=None):
             self.q = q 
             self.nearest_q_idx = nearest_q_idx
-
+            self.parent = parent # ued for RRT*
 
     def __init__(self, robot_backend, q0, qf, step_size=0.1, n_trials=1000):
         self.tree = [_RRT.Node(np.array(q0), -1)]
@@ -474,61 +474,103 @@ class _RRT():
         self.n_trials = n_trials
         self.robot = robot_backend
 
-    def plan(self):
+    def plan_star(self):
         self.traj = None
         self.converged = False
         trial = 0
         while trial < self.n_trials:
             q_rand = None
-            # print(f"{trial}/{self.n_trials}\r", end='')
             if np.random.rand() < 0.1:
                 q_rand = self.qf
-            else:q_rand = np.random.uniform(-2*np.pi, 2*np.pi, 6)
-            # while q_rand is None:
-            #     q_rand = np.random.uniform(-2*np.pi, 2*np.pi, 6)
-            #     if self.robot.check_joint_collisions(q_rand):
-            #         q_rand = None
-
+            else:
+                q_rand = np.random.uniform(-2*np.pi, 2*np.pi, 6)
+        
             distances = []
             for node in self.tree:
                 distances.append(np.linalg.norm(node.q - q_rand))
             nearest_idx = np.argmin(distances)
             q_nearest = self.tree[nearest_idx].q
             
-            # steps = int(np.linalg.norm(q_rand-q_nearest)/self.step_size+1)
             if np.linalg.norm(q_rand - q_nearest) == 0:
                 continue
             direction = (q_rand - q_nearest) / np.linalg.norm(q_rand - q_nearest)
             q_new = q_nearest + self.step_size * direction
-            # q_new = np.linspace(q_nearest, q_rand, steps)[1]
+            if not self.robot.check_joint_collisions(q_new):
+                self.tree.append(_RRT.Node(q_new, nearest_idx, parent=nearest_idx))
+                new_node_idx = len(self.tree) - 1
+                for i, node in enumerate(self.tree):
+                    if i == new_node_idx:
+                        continue
+                    rewire_radius = 3 # self.step_size * (np.log(len(self.tree)) / len(self.tree)) ** (1/6) # 6 for the DOF
+                    # print(f"{np.linalg.norm(node.q - q_new):04.04f} <= {rewire_radius:04.04f}")
+                    if np.linalg.norm(node.q - q_new) <= rewire_radius:  
+                        potential_cost = (self._cost(self.tree[nearest_idx]) + np.linalg.norm(q_new - q_nearest))
+                        if potential_cost < self._cost(node):
+                            # print(f"{len(self.tree)}rewired")
+                            node.parent = new_node_idx
 
+                if np.linalg.norm(q_new-self.qf) < self.step_size:
+                    self.tree.append(_RRT.Node(self.qf, len(self.tree)-1))
+                    self.traj = self._generate_traj()
+                    self.converged = True
+            trial += 1
+        return self.converged
+    
+    def plan(self):
+        self.traj = None
+        self.converged = False
+        trial = 0
+        while trial < self.n_trials:
+            q_rand = None
+            if np.random.rand() < 0.1:
+                q_rand = self.qf
+            else:
+                q_rand = np.random.uniform(-2*np.pi, 2*np.pi, 6)
+            distances = []
+            for node in self.tree:
+                distances.append(np.linalg.norm(node.q - q_rand))
+            nearest_idx = np.argmin(distances)
+            q_nearest = self.tree[nearest_idx].q  
+            if np.linalg.norm(q_rand - q_nearest) == 0:
+                continue
+            direction = (q_rand - q_nearest) / np.linalg.norm(q_rand - q_nearest)
+            q_new = q_nearest + self.step_size * direction
             if not self.robot.check_joint_collisions(q_new):
                 self.tree.append(_RRT.Node(q_new, nearest_idx))
                 if np.linalg.norm(q_new-self.qf) < self.step_size:
                     self.tree.append(_RRT.Node(self.qf, len(self.tree)-1))
-                    self.traj = self.generate_traj()
+                    self.traj = self._generate_traj()
                     self.converged = True
             trial += 1
         return self.converged
 
-    def generate_traj(self):
+    def _cost(self, node: Node):
+        cost = 0
+        while node.parent is not None:
+            parent_node = self.tree[node.parent]
+            cost += np.linalg.norm(node.q - parent_node.q)
+            node = parent_node
+        # print("cost:", cost)
+        return cost
+
+    def _generate_traj(self):
         traj = []
         node_idx = len(self.tree) - 1
         while node_idx != -1:
             traj.append(self.tree[node_idx].q)
             node_idx = self.tree[node_idx].nearest_q_idx
-        return np.array(traj[::-1])
+        traj.reverse()
+        return np.array(traj)
     
     def spline_smooth_traj(self, num_points=200):
         t = np.arange(len(self.traj))  # Time steps, assuming uniform time between waypoints
-
         # Create cubic splines for each joint (assuming 6DOF robot)
         splines = [CubicSpline(t, self.traj[:, i]) for i in range(6)]  # One spline per joint
 
         # Generate more points along the trajectory using spline interpolation
         t_smooth = np.linspace(0, len(self.traj) - 1, num=num_points)
         self.traj = np.array([spline(t_smooth) for spline in splines]).T
-
+        
 class SimRobotBackend(ERobot):
     """Implementation of a robot trough a urdf file using rtb, usable standalone for debugging purpose, used by the SimRobot
     class for computations, inherit from roboticstoolbox.robot.Erobot.Erobot
@@ -572,8 +614,10 @@ class SimRobotBackend(ERobot):
         self.use_j_limit = True
 
     def set_joint_limit(self, joint_index: int, limit: tuple[float, float]):
-        self.qlim[0][joint_index] = limit[0]
-        self.qlim[1][joint_index] = limit[1]
+        qlim = copy.deepcopy(self.qlim)
+        qlim[0][joint_index] = limit[0]
+        qlim[1][joint_index] = limit[1]
+        self.qlim = copy.deepcopy(qlim)
 
     def set_joint_limits_usage(self, value: bool):
         self.use_j_limit = value
@@ -687,11 +731,15 @@ class SimRobotBackend(ERobot):
         Returns:
             bool, ndarray: whether or not the solution is valid and the solution
         """
+        T = copy.deepcopy(Tep)
         start = time.time()
         perturbation = 0.2 * (np.pi - (-np.pi))
         sol_valid = False
         trial = 0
-        T = Tep * self.tcp_frame_transf.inv()
+        T = (T * self.tcp_frame_transf.inv())
+        # T = np.array(T * self.tcp_frame_transf.inv())
+        # T[:3, 0:2] = np.eye(3)[:3, 0:2]
+        # T = sm.SE3.Rt(sm.SO3(T[:3, 0:3], check=False), T[:3, 3], check=False)
         q0 = self.q if q0 is None else q0
         starting_q = q0
         if not self.check_pose_collisions(T): # if the point itself is in collision then we don't even try
@@ -709,23 +757,23 @@ class SimRobotBackend(ERobot):
         else:
             print("The pose is in collision, impossible for the robot to reach the pose")
         if not sol_valid:
-            sol = np.full(6, np.nan)
+            sol = [np.full(6, np.nan)]
         # print(f"trial: {trial}, success: {sol_valid}, time: {time.time()-start}", end=' ')
-        return sol_valid, sol
+        return sol_valid, sol[0]
 
-    def generate_traj_rrt(self, q0, qf, step_size=0.05, n_trials=1000, plan_tries=10):
+    def generate_traj_rrt(self, q0, qf, step_size=0.05, n_trials=1000, plan_tries=10, use_rrt_star=False):
         tries = 0
+        success = False
         while tries < plan_tries: 
-            print(f"rrt tries: {tries+1}/{plan_tries}", end='\r')
+            # print(f"rrt tries: {tries+1}/{plan_tries}", end='\r')
             rrt = _RRT(robot_backend=self, q0=q0, qf=qf, step_size=step_size, n_trials=n_trials)
-            if rrt.plan():
+            converged = rrt.plan_star() if use_rrt_star else rrt.plan()
+            if converged:
+                success = True
+                rrt.spline_smooth_traj()
                 break
             tries += 1
-        rrt.spline_smooth_traj()
-        # print()
-        # for node in rrt.tree:
-        #     print(node.q, node.nearest_q_idx)
-        return rrt
+        return success, rrt.traj
         
     def world_T_robot(self, T: sm.SE3) -> sm.SE3:
         """
@@ -811,9 +859,9 @@ class SimRobotBackend(ERobot):
             if hold:
                 self.env.hold()
 
-def gen_rings_poses(obj_pose:sm.SE3, radius, h_res=8, v_res=5, stretch=1):
+def gen_rings_poses(obj_pose:sm.SE3, radius, h_res=8, v_res=5, stretch=1, starting_angle=np.pi/3, ending_angle=np.pi-np.pi/3):
     u = np.linspace(0, np.pi*2, h_res+1)[1:] # the +1 is to get to the actual number
-    v = np.linspace(np.pi/6, np.pi-np.pi/6, v_res)
+    v = np.linspace(starting_angle, ending_angle, v_res)
     poses = deque()
     for phi in v:
         for theta in u: 
@@ -824,9 +872,10 @@ def gen_rings_poses(obj_pose:sm.SE3, radius, h_res=8, v_res=5, stretch=1):
             direction_vector /= np.linalg.norm(direction_vector)
             z_angle = np.arctan2(direction_vector[1], direction_vector[0])
             y_angle = np.arctan2(np.sqrt(direction_vector[0]**2 + direction_vector[1]**2), direction_vector[2])
-            Rot_mat = sm.SO3.Rz(z_angle)* sm.SO3.Ry(y_angle) * sm.SO3.Rx(0)
+            Rot_mat = sm.SO3.Rz(z_angle) * sm.SO3.Ry(y_angle) * sm.SO3.Rx(0) * sm.SO3.Rz(0)
+            # Rot_mat=Rot_mat*sm.SO3.Rz(np.pi/2)
             T = sm.SE3().Rt(Rot_mat, np.array([x, y, z]))
-            T = obj_pose * T 
+            T = obj_pose * T
             poses.append(T)
         u = u[::-1]
     return poses
