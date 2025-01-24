@@ -1,20 +1,19 @@
 import omni
 from omni.isaac.core.utils.stage import add_reference_to_stage
-from geometry_msgs.msg import Pose, Point, Quaternion, PoseArray
 from omni.isaac.core.prims import XFormPrim
 from omni.isaac.core import World
-from rclpy.node import Node
-import spatialmath as sm
 from omni.isaac.core.objects import VisualCuboid
 import omni.isaac.core.utils.prims as prims_utils
 from omni.isaac.core.materials import OmniPBR
-from PIL import Image, ImageDraw, ImageFont
 from omni.isaac.core.utils.types import ArticulationAction
 import omni.isaac.core.utils.numpy.rotations as rot_utils
 from omni.isaac.sensor import RotatingLidarPhysX
-from ros import PointCloudPublisher
-from robotics import SimRobotBackend
 from omni.isaac.core.robots import Robot
+from geometry_msgs.msg import Pose, Point, Quaternion, PoseArray
+from rclpy.node import Node
+import spatialmath as sm
+from PIL import Image, ImageDraw, ImageFont
+from gubokit import ros, isaac_sim, utilities, robotics
 from sensor_msgs.msg import JointState
 from collections import deque
 import roboticstoolbox as rtb
@@ -119,6 +118,27 @@ class PoseArraySubscriber():
             print("removing: ", self.prim_path+ "_" + "{:04}".format(i))
             self.world.scene.remove_object(self.prim_path.split('/')[-1] + "_" + "{:04}".format(i))
         self.i = 0
+
+class SimulationObject(XFormPrim):
+    def __init__(self, prim_path, name = "xform_prim", position = None, translation = None, orientation = None, scale = None, visible = None):
+        super().__init__(prim_path, name, position, translation, orientation, scale, visible)
+        self.speed = np.array([0, 0, 0])
+        self.acc = np.array([0, 0, 0])
+
+    def set_speed(self, speed: ndarray):
+        self.speed = np.array(speed)
+    
+    def set_acc(self, acc: ndarray):
+        self.acc = np.array(acc)
+    
+    def physisc_step(self):
+        p = self.get_world_pose()[0] + self.speed
+        self.speed = self.speed + self.acc
+        
+        self.set_world_pose(p)
+    
+    def print_state(self):
+        print(f"Object:{self.name}; p: [{self.get_world_pose()[0][0]:07.3f}, {self.get_world_pose()[0][1]:07.3f}, {self.get_world_pose()[0][2]:07.3f}]; speed: [{self.speed[0]:07.3f}, {self.speed[1]:07.3f}, {self.speed[2]:07.3f}]; acc: [{self.acc[0]:07.3f}, {self.acc[1]:07.3f}, {self.acc[2]:07.3f}]")
 
 class SimulationGui(XFormPrim):
     """A graphical user interface simulated in isaac sim environment with the use of textures and cubes
@@ -493,7 +513,7 @@ class _SimLidar(RotatingLidarPhysX):
         self.y = None
         self.z = None
 
-        self.ros_pub = None if ros_topic is None else PointCloudPublisher(topic_name=ros_topic, frame_id=frame_id)
+        self.ros_pub = None if ros_topic is None else ros.PointCloudPublisher(topic_name=ros_topic, frame_id=frame_id)
 
         self.total_cloud = o3d.geometry.PointCloud()
         self.voxel_size = 0.001
@@ -674,7 +694,7 @@ class SimRobot(Robot):
         super().__init__(prim_path=robot_prim_path, name=name, position=position, orientation=orientation)
         self.local_T_robot = (sm.SE3.Rt(rot_utils.quats_to_rot_matrices(self.get_local_pose()[1]), self.get_local_pose()[0]))
         self.manipulator_controller = self.get_articulation_controller()
-        self.backend = SimRobotBackend(urdf_file=urdf_file, tcp_frame_urdf=tcp_frame_urdf, x_free_space=x_free_space, 
+        self.backend = robotics.SimRobotBackend(urdf_file=urdf_file, tcp_frame_urdf=tcp_frame_urdf, x_free_space=x_free_space, 
                                        y_free_space=y_free_space, z_free_space=z_free_space, home_position=home_position,
                                        tcp_frame_transf=tcp_frame_transf, robot_base=self.local_T_robot)
         self.tcp_frame = tcp_frame_urdf
@@ -775,8 +795,8 @@ class SimRobot(Robot):
     def stop_following_frame(self):
         self.follow_frame_last_pose = None
 
-    def move_up(self, offset):
-        self.move_to_cart_position(self.get_tcp_pose() + sm.SE3.Rt(np.eye(3), np.array([0, 0, offset])))
+    def move_up(self, offset, t=200):
+        self.move_to_cart_position(sm.SE3(self.get_tcp_pose()) * sm.SE3.Rt(np.eye(3), np.array([0, 0, offset])), t=t)
 
     def grab_object(self, obj_pose, use_jspace=False, force=None):
         self.open_gripper()
@@ -875,7 +895,7 @@ class BasicSetup(Node):
         # 
         super().__init__("basic_setup")
         omni.usd.get_context().open_stage(os.environ['FLUENTLY_WS_PATH'] + "/props/scene_prima_additiva_hand_e.usd")
-        self.logger = CustomLogger("Basic_setup", 
+        self.logger = utilities.CustomLogger("Basic_setup", 
                                    os.environ['FLUENTLY_WS_PATH'] + "/logs/basic_setup.log",
                                    overwrite=True)
         self.logger.info("="*10 + "Starting simulation" + "="*10)
