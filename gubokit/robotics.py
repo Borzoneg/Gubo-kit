@@ -315,6 +315,7 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
             home_jpos (_type_, optional): home joint configuration. Defaults to None.
         """
         self.ip = ip
+        self.home_pos = home_jpos
         RTDEControlInterface.__init__(self, ip)
         RTDEReceiveInterface.__init__(self, ip)
         RTDEIOInterface.__init__(self, ip)
@@ -381,6 +382,12 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         self.servoStop()
         self.gripper.move_and_wait_for_pos(255, 255, 100)
         self.servoStop()
+
+    def pick_and_place(self, pick_pose: ndarray, place_pose: ndarray):
+        """pick an object and place it somewhere"""
+        self.grab_object(pick_pose)
+        self.moveL(place_pose, 0.1, 0.3)
+        self.open_gripper()
 
 class Sphere():
     """Geometrical representation of a sphere
