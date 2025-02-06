@@ -304,6 +304,17 @@ class RobotiqGripper:
         final_obj = cur_obj
         return final_pos, RobotiqGripper.ObjectStatus(final_obj)
 
+class VacuumGripper:
+    def __init__(self, robot, id):
+        self.robot = robot
+        self.id = id
+
+    def grab(self):
+        self.robot.rtde_io.setStandardDigitalOut(self.id, True)
+    
+    def release(self):
+        self.robot.rtde_io.setStandardDigitalOut(self.id, False)
+
 class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
     """ Wrapper class for all robot robot_control functions
     """
@@ -317,8 +328,8 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         self.ip = ip
         self.home_pos = home_jpos
         RTDEControlInterface.__init__(self, ip)
-        RTDEReceiveInterface.__init__(self, ip)
-        RTDEIOInterface.__init__(self, ip)
+        self.rtde_receive = RTDEReceiveInterface.__init__(self, ip)
+        self.rtde_io = RTDEIOInterface.__init__(self, ip)
 
     def shutdown(self):
         self.stopRobot()
@@ -370,7 +381,10 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
             print("Gripper not connected!")
             return
         self.servoStop()
-        self.gripper.move_and_wait_for_pos(0, 255, 100)
+        if isinstance(self.gripper, VacuumGripper):
+            self.gripper.release()
+        elif isinstance(self.gripper, RobotiqGripper):
+            self.gripper.move_and_wait_for_pos(0, 255, 100)
         self.servoStop()
 
     def close_gripper(self):
@@ -380,7 +394,10 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
             print("Gripper not connected!")
             return
         self.servoStop()
-        self.gripper.move_and_wait_for_pos(255, 255, 100)
+        if isinstance(self.gripper, VacuumGripper):
+            self.gripper.grab()
+        elif isinstance(self.gripper, RobotiqGripper):
+            self.gripper.move_and_wait_for_pos(255, 255, 100)
         self.servoStop()
 
     def pick_and_place(self, pick_pose: ndarray, place_pose: ndarray):
