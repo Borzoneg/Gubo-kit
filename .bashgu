@@ -19,6 +19,7 @@ source "/opt/ros/humble/setup.bash"
 export ROS_LOCALHOST_ONLY=1
 export PYTHONPATH="${PYTHONPATH}:$FLUENTLY_WS_PATH/../../hfc-thrift/src/main/python/src"
 export PYTHONPATH="${PYTHONPATH}:$HOME/Gubo-kit"
+export QT_QPA_PLATFORM=xcb
 # export PYTHONPATH="${PYTHONPATH}:$FLUENTLY_WS_PATH/src/utils/utils"
 
 alias isaac="cd $ISAACPATH && ./isaac-sim.sh"

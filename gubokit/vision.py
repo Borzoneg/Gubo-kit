@@ -13,7 +13,7 @@ class RealSenseCamera():
         config = rs.config()
 
         config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-        config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+        config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 10)
         config.enable_stream(rs.stream.infrared, 1, 640, 480, rs.format.y8, 30)
         cfg = self.pipeline.start(config)
 
@@ -28,7 +28,6 @@ class RealSenseCamera():
         
         # extrinsic of the camera
         self.extrinsic = sm.SE3(0, 0, 0)
-
 
     def video_stream(self, frame_type=['color']):
         while True:
@@ -60,8 +59,6 @@ class RealSenseCamera():
             if key == 113 or (cv2.getWindowProperty("Color", cv2.WND_PROP_VISIBLE) < 1 and cv2.getWindowProperty("Depth", cv2.WND_PROP_VISIBLE) < 1 and cv2.getWindowProperty("Infrared 1", cv2.WND_PROP_VISIBLE) < 1):
                 break
         
-
-
     def get_color_frame(self):
         frames = self.pipeline.wait_for_frames()
         frame = frames.get_color_frame()
@@ -79,3 +76,43 @@ class RealSenseCamera():
         frame = frames.get_depth_frame()
         frame = np.asanyarray(frame.get_data())
         return frame
+    
+    def find_max_res(self):
+        ctx = rs.context()
+        devices = ctx.query_devices()
+        depth_sensor = devices[0].first_depth_sensor() 
+        color_sensor = devices[0].first_color_sensor()
+        profiles = []
+        profiles.extend(depth_sensor.get_stream_profiles())
+        profiles.extend(color_sensor.get_stream_profiles())
+
+        print("\nSupported Resolutions:")
+        for profile in profiles:
+            if profile.is_video_stream_profile():
+                v_profile = profile.as_video_stream_profile()
+                print(f"Stream: {v_profile.stream_type()}, Resolution: {v_profile.width()}x{v_profile.height()}, FPS: {v_profile.fps()}, Format: {v_profile.format()}")
+
+    
+def show_frames(title, frames):
+    for i, frame in enumerate(frames):
+        t = title + f"_{i:02d}" if i > 0 else title
+        cv2.imshow(t, frame)
+    while True:
+        key = cv2.waitKey(1)
+        if  key != -1 or cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) < 1:
+            break
+
+if __name__ == "__main__":
+    camera = RealSenseCamera()
+    # camera.find_max_res()
+    camera_frame = camera.get_color_frame()
+    cv2.imshow("frame", camera_frame)
+    while True:
+        key = cv2.waitKey(1)
+        if key == 113:
+            break
+        elif key == 13:
+            camera_frame = camera.get_color_frame()
+            cv2.imshow("frame", camera_frame)
+
+    cv2.imwrite("camera_frame.jpg", camera_frame)
