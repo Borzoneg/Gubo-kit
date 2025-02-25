@@ -304,19 +304,30 @@ class RobotiqGripper:
         final_obj = cur_obj
         return final_pos, RobotiqGripper.ObjectStatus(final_obj)
 
+    def get_status(self):
+        return self.is_closed()
+    
 class VacuumGripper:
     def __init__(self, robot, id):
         self.robot = robot
         self.id = id
 
     def grab(self):
-        self.robot.rtde_io.setStandardDigitalOut(self.id, True)
+        self.robot.setStandardDigitalOut(self.id, True)
+        time.sleep(0.05)
     
     def release(self):
-        self.robot.rtde_io.setStandardDigitalOut(self.id, False)
+        self.robot.setStandardDigitalOut(self.id, False)
+        time.sleep(0.05)
+
+    def get_status(self):
+        return self.robot.getDigitalOutState(self.id)
 
 class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
     """ Wrapper class for all robot robot_control functions
+    to print 
+            getActualTCPPose: tcp pose
+            getActualQ: joint pose
     """
     def __init__(self, ip: str, home_jpos=None):
         """constructor
@@ -327,14 +338,15 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         """
         self.ip = ip
         self.home_pos = home_jpos
+        self.gripper = None
         RTDEControlInterface.__init__(self, ip)
-        self.rtde_receive = RTDEReceiveInterface.__init__(self, ip)
-        self.rtde_io = RTDEIOInterface.__init__(self, ip)
+        RTDEReceiveInterface.__init__(self, ip)
+        RTDEIOInterface.__init__(self, ip)
 
     def shutdown(self):
         self.stopRobot()
 
-    def add_gripper(self, gripper: RobotiqGripper):
+    def add_gripper(self, gripper: RobotiqGripper|VacuumGripper):
         """Add a robotiq gripper to the robot 
 
         Args:
@@ -405,6 +417,13 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         self.grab_object(pick_pose)
         self.moveL(place_pose, 0.1, 0.3)
         self.open_gripper()
+
+    def move_to_cart_position(self, pose: sm.SE3, speed=0.1):   
+        self.moveL(np.hstack((pose.t, sm.SO3.eulervec(sm.SO3(pose.R)))), speed, 0.3)
+
+    def get_gripper_status(self):
+        if self.gripper is not None:
+            return self.gripper.get_status()
 
 class Sphere():
     """Geometrical representation of a sphere
