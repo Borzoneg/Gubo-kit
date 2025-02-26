@@ -15,11 +15,12 @@ alias gu_edit="code $FLUENTLY_WS_PATH/.bashgu"
 alias gu_py="python3 $FLUENTLY_WS_PATH/src/utils/utils/test.py"
 
 source "/opt/ros/humble/setup.bash"
-source "$FLUENTLY_WS_PATH/../install/setup.bash"
+# source "$FLUENTLY_WS_PATH/../install/setup.bash"
 export ROS_LOCALHOST_ONLY=1
 # export PYTHONPATH="${PYTHONPATH}:$FLUENTLY_WS_PATH/../../hfc-thrift/src/main/python/src"
 export PYTHONPATH="${PYTHONPATH}:$HOME/fluently_ws/hfc-thrift/src/main/python/src"
 export PYTHONPATH="${PYTHONPATH}:$HOME/Gubo-kit"
+export QT_QPA_PLATFORM=xcb
 # export PYTHONPATH="${PYTHONPATH}:$FLUENTLY_WS_PATH/src/utils/utils"
 
 alias isaac="cd $ISAACPATH && ./isaac-sim.sh"
