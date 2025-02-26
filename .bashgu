@@ -17,7 +17,8 @@ alias gu_py="python3 $FLUENTLY_WS_PATH/src/utils/utils/test.py"
 source "/opt/ros/humble/setup.bash"
 source "$FLUENTLY_WS_PATH/../install/setup.bash"
 export ROS_LOCALHOST_ONLY=1
-export PYTHONPATH="${PYTHONPATH}:$FLUENTLY_WS_PATH/../../hfc-thrift/src/main/python/src"
+# export PYTHONPATH="${PYTHONPATH}:$FLUENTLY_WS_PATH/../../hfc-thrift/src/main/python/src"
+export PYTHONPATH="${PYTHONPATH}:$HOME/fluently_ws/hfc-thrift/src/main/python/src"
 export PYTHONPATH="${PYTHONPATH}:$HOME/Gubo-kit"
 # export PYTHONPATH="${PYTHONPATH}:$FLUENTLY_WS_PATH/src/utils/utils"
 
@@ -34,6 +35,8 @@ alias prima_additiva_trust="ros2 topic pub /trust std_msgs/msg/Bool \"{data: Tru
 alias prima_additiva_launch="cd $FLUENTLY_WS_PATH/.. && ros2 launch prima_additiva launch.py"
 alias prima_additiva_thrift="cd $FLUENTLY_WS_PATH/../../ && ./hfc-thrift/bin/startServer.sh -p 7070 fluently_ontology/fluently.yml"
 alias prima_additiva_rviz="cd $FLUENTLY_WS_PATH && ros2 run rviz2 rviz2 src/prima_additiva/configs/cloud_shower.rviz"
+
+alias fluently_thrift="cd $HOME/fluently_ws && ./hfc-thrift/bin/startServer.sh -p 7070 fluently_ontology/fluently.yml"
 
 isaac_py(){
      cd $ISAACPATH
