@@ -4,17 +4,19 @@ import cv2
 import spatialmath as sm
 
 class RealSenseCamera():
-    def __init__(self):
+    def __init__(self, enabled_strams={'color': [1280, 720], 'depth': [640, 480], 'infrared': [640, 480]}):
         devices = rs.context().query_devices()
         if len(devices) == 0:
             raise RuntimeError("No Intel RealSense devices found!")
         # Pipeline for the realsense camera
         self.pipeline = rs.pipeline()
         config = rs.config()
-
-        config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-        config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 10)
-        config.enable_stream(rs.stream.infrared, 1, 640, 480, rs.format.y8, 30)
+        if 'color' in enabled_strams.keys():
+            config.enable_stream(rs.stream.color, enabled_strams['color'][0], enabled_strams['color'][1], rs.format.bgr8, 10)
+        if 'depth' in enabled_strams.keys():
+            config.enable_stream(rs.stream.depth, enabled_strams['depth'][0], enabled_strams['depth'][1], rs.format.z16, 30)
+        if 'infrared' in enabled_strams.keys():
+            config.enable_stream(rs.stream.infrared, 1, enabled_strams['infrared'][0], enabled_strams['infrared'][1], rs.format.y8, 30)
         cfg = self.pipeline.start(config)
 
         # intrinsic of the camera
