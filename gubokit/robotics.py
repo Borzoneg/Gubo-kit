@@ -19,6 +19,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from roboticstoolbox.backends import PyPlot
 from collections import deque
 from scipy.interpolate import CubicSpline
+from utilities import T_to_rotvec
 
 class RobotiqGripper:
     """
@@ -418,8 +419,12 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         self.moveL(place_pose, 0.1, 0.3)
         self.open_gripper()
 
-    def move_to_cart_position(self, pose: sm.SE3, speed=0.1):   
-        self.moveL(np.hstack((pose.t, sm.SO3.eulervec(sm.SO3(pose.R)))), speed, 0.3)
+    def move_to_cart_pose(self, pose: sm.SE3, speed=0.1):
+        cp_pose = copy.deepcopy(pose)
+        if type(pose) == np.ndarray:
+            if pose.shape == (4,4):
+                cp_pose = sm.SE3(cp_pose)
+        self.moveL(T_to_rotvec(cp_pose), speed, 0.3)
 
     def get_gripper_status(self):
         if self.gripper is not None:
@@ -964,3 +969,4 @@ def gen_s_poses(obj_pose:sm.SE3, radius, num_points: int=25):
         T = obj_pose * T 
         s.append(T)
     return s
+

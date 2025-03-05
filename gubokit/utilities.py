@@ -131,3 +131,9 @@ def view_clouds_in_folder():
 
 def T_to_xyzrpy(T: sm.SE3):
     return np.hstack((T.t, sm.SO3(T.R).eul()))
+
+def rotvec_to_T(rotvec: ndarray):
+    return sm.SE3.Rt(sm.SO3.EulerVec(rotvec[3:]), rotvec[:3])
+
+def T_to_rotvec(T: sm.SE3):
+    return np.hstack((T.t, sm.SO3(T.R).eulervec()))
