@@ -134,8 +134,8 @@ def collect_calibration_poses(robot, filename=None):
     return calibration_poses
 
 def collect_calibration_files(robot, camera, poses, dirpath="."):
-    photos_dir = os.path.join(dirpath, "photo")
-    poses_dir =  os.path.join(dirpath, "poses")
+    photos_dir = os.path.join(dirpath, "photos")
+    poses_dir = os.path.join(dirpath, "poses")
     os.makedirs(photos_dir, exist_ok=True)
     os.makedirs(poses_dir, exist_ok=True)
     input("Press enter to start collecting the photos (the robot will move through each poses provided)>>>")
@@ -146,11 +146,24 @@ def collect_calibration_files(robot, camera, poses, dirpath="."):
         cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.jpg"), camera_frame)
         np.save(os.path.join(poses_dir, f"pose_{i:03d}"), pose)
 
+def show_stream_and_save_frame(filepath, camera):
+    while True:
+        key = cv2.waitKey(1)
+        if key == 13:
+            break
+        camera_frame = camera.get_color_frame()
+        cv2.imshow("frame", camera_frame)
+    cv2.imwrite(os.path.join(filepath), camera_frame)
+
 if __name__ == "__main__":
+    # robot = Robot("192.168.1.100")
     camera = RealSenseCamera()
-    robot = Robot("192.168.1.100")
+    camera_frame = camera.get_color_frame()
+    
+    show_stream_and_save_frame("background.jpg", camera)
+    show_stream_and_save_frame("frame.jpg", camera)
     
     # cal_poses = collect_calibration_poses(robot, "./useful_files/camera_calibration/cal_poses")
-    cal_poses = np.load("./useful_files/camera_calibration/cal_poses.npy")
-    collect_calibration_files(robot, camera, cal_poses, "./useful_files/camera_calibration")
+    # cal_poses = np.load("./useful_files/camera_calibration/cal_poses.npy")
+    # collect_calibration_files(robot, camera, cal_poses, "./useful_files/camera_calibration")
 
