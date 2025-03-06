@@ -19,7 +19,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from roboticstoolbox.backends import PyPlot
 from collections import deque
 from scipy.interpolate import CubicSpline
-from utilities import T_to_rotvec
+from gubokit.utilities import T_to_rotvec
 
 class RobotiqGripper:
     """
@@ -780,7 +780,7 @@ class SimRobotBackend(ERobot):
             bool, ndarray: whether or not the solution is valid and the solution
         """
         T = copy.deepcopy(Tep)
-        start = time.time()
+        # start = time.time()
         perturbation = 0.2 * (np.pi - (-np.pi))
         sol_valid = False
         trial = 0
