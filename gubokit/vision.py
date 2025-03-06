@@ -150,7 +150,7 @@ if __name__ == "__main__":
     camera = RealSenseCamera()
     robot = Robot("192.168.1.100")
     
-    cal_poses = collect_calibration_poses(robot, "./useful_files/camera_calibration/cal_poses")
-    # cal_poses = np.load("./useful_files/camera_calibration/cal_poses.npy")
-    # collect_calibration_files(robot, camera, cal_poses, "./useful_files/camera_calibration")
+    # cal_poses = collect_calibration_poses(robot, "./useful_files/camera_calibration/cal_poses")
+    cal_poses = np.load("./useful_files/camera_calibration/cal_poses.npy")
+    collect_calibration_files(robot, camera, cal_poses, "./useful_files/camera_calibration")
 
