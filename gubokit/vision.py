@@ -1,9 +1,9 @@
 import pyrealsense2 as rs
 import numpy as np
 import cv2
-from robotics import Robot
+from gubokit.robotics import Robot
 import spatialmath as sm
-from utilities import rotvec_to_T, T_to_rotvec
+from gubokit.utilities import rotvec_to_T, T_to_rotvec
 import os
 import time
 
