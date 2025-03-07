@@ -5,7 +5,9 @@ from gubokit.robotics import Robot
 import spatialmath as sm
 from gubokit.utilities import rotvec_to_T, T_to_rotvec
 import os
+import csv
 import time
+import yaml
 
 class RealSenseCamera():
     def __init__(self, enabled_strams={'color': [1280, 720], 'depth': [640, 480], 'infrared': [640, 480]}, extrinsic = sm.SE3([0, 0, 0])):
@@ -24,8 +26,8 @@ class RealSenseCamera():
         cfg = self.pipeline.start(config)
 
         # intrinsic of the camera
-        profile = cfg.get_stream(rs.stream.depth) # Fetch stream profile for depth stream
-        intr = profile.as_video_stream_profile().get_intrinsics() # intr.model: distortion model, intr.coeffs: distortion coefficients
+        self.profile = cfg.get_stream(rs.stream.depth) # Fetch stream profile for depth stream
+        intr = self.profile.as_video_stream_profile().get_intrinsics() # intr.model: distortion model, intr.coeffs: distortion coefficients
         self.fx, self.fy = intr.fx, intr.fy
         self.optical_centre_x, self.optical_centre_y = intr.ppx, intr.ppy
         self.camera_matrix = np.array([[self.fx, 0, self.optical_centre_x],
@@ -40,6 +42,18 @@ class RealSenseCamera():
         # depth_sensor.set_option(rs.option.laser_power, 150)  # Adjust based on environment
         # # Set depth range (clipping)
         # depth_sensor.set_option(rs.option.depth_units, 0.001)  # Ensure correct depth scaling
+        
+        # intrinsic of the camera
+        self.intr = {
+                        "width": intr.width,
+                        "height": intr.height,
+                        "fx": intr.fx,
+                        "fy": intr.fy,
+                        "ppx": intr.ppx,
+                        "ppy": intr.ppy,
+                        "distortion_model": str(intr.model),
+                        "distortion_coefficients": list(intr.coeffs)
+        }
 
         # extrinsic of the camera
         self.extrinsic = extrinsic
@@ -139,12 +153,18 @@ def collect_calibration_files(robot, camera, poses, dirpath="."):
     os.makedirs(photos_dir, exist_ok=True)
     os.makedirs(poses_dir, exist_ok=True)
     input("Press enter to start collecting the photos (the robot will move through each poses provided)>>>")
-    for i, pose in enumerate(poses):
-        robot.move_to_cart_pose(pose)
-        time.sleep(1)
-        camera_frame = camera.get_color_frame()
-        cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.jpg"), camera_frame)
-        np.save(os.path.join(poses_dir, f"pose_{i:03d}"), pose)
+    
+    with open(os.path.join(dirpath, "intrinsic.yaml"), "w") as f:
+            yaml.dump(camera.intr, f, default_flow_style=False)
+
+    with open(os.path.join(dirpath, "poses.csv"), "w") as f:
+        writer = csv.writer(f)
+        writer.writerows([T_to_rotvec(sm.SE3(pose)) for pose in poses])
+    # for i, pose in enumerate(poses):
+        # robot.move_to_cart_pose(pose)
+        # time.sleep(1)
+        # camera_frame = camera.get_color_frame()
+        # cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.jpg"), camera_frame)
 
 def show_stream_and_save_frame(filepath, camera):
     while True:
@@ -156,14 +176,14 @@ def show_stream_and_save_frame(filepath, camera):
     cv2.imwrite(os.path.join(filepath), camera_frame)
 
 if __name__ == "__main__":
-    # robot = Robot("192.168.1.100")
+    robot = Robot("192.168.1.100")
     camera = RealSenseCamera()
     camera_frame = camera.get_color_frame()
     
-    show_stream_and_save_frame("background.jpg", camera)
-    show_stream_and_save_frame("frame.jpg", camera)
+    # show_stream_and_save_frame("background.jpg", camera)
+    # show_stream_and_save_frame("frame.jpg", camera)
     
     # cal_poses = collect_calibration_poses(robot, "./useful_files/camera_calibration/cal_poses")
-    # cal_poses = np.load("./useful_files/camera_calibration/cal_poses.npy")
-    # collect_calibration_files(robot, camera, cal_poses, "./useful_files/camera_calibration")
+    cal_poses = np.load("./useful_files/camera_calibration/cal_poses.npy")
+    collect_calibration_files(robot, camera, cal_poses, "./useful_files/camera_calibration")
 

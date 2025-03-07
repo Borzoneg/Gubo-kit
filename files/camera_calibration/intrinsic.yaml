@@ -1,0 +1,13 @@
+distortion_coefficients:
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+- 0.0
+distortion_model: distortion.brown_conrady
+fx: 386.0231018066406
+fy: 386.0231018066406
+height: 480
+ppx: 321.6809387207031
+ppy: 238.81715393066406
+width: 640
