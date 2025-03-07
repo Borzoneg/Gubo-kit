@@ -17,6 +17,7 @@ class RealSenseCamera():
         # Pipeline for the realsense camera
         self.pipeline = rs.pipeline()
         config = rs.config()
+        print(enabled_strams)
         if 'color' in enabled_strams.keys():
             config.enable_stream(rs.stream.color, enabled_strams['color'][0], enabled_strams['color'][1], rs.format.bgr8, 10)
         if 'depth' in enabled_strams.keys():
@@ -26,22 +27,24 @@ class RealSenseCamera():
         cfg = self.pipeline.start(config)
 
         # intrinsic of the camera
-        self.profile = cfg.get_stream(rs.stream.depth) # Fetch stream profile for depth stream
+        self.profile = cfg.get_stream(rs.stream.color) # Fetch stream profile for color stream
         intr = self.profile.as_video_stream_profile().get_intrinsics() # intr.model: distortion model, intr.coeffs: distortion coefficients
         self.fx, self.fy = intr.fx, intr.fy
         self.optical_centre_x, self.optical_centre_y = intr.ppx, intr.ppy
         self.camera_matrix = np.array([[self.fx, 0, self.optical_centre_x],
                                         [0, self.fy, self.optical_centre_y],
                                         [0,       0,                     1]])
-        
-        depth_sensor = cfg.get_device().first_depth_sensor()
-        # Enable auto-exposure
-        if depth_sensor.supports(rs.option.enable_auto_exposure):
-            depth_sensor.set_option(rs.option.enable_auto_exposure, 1)
-        # # Adjust laser power (0-360, higher = stronger IR illumination)
-        # depth_sensor.set_option(rs.option.laser_power, 150)  # Adjust based on environment
-        # # Set depth range (clipping)
-        # depth_sensor.set_option(rs.option.depth_units, 0.001)  # Ensure correct depth scaling
+        try:
+            depth_sensor = cfg.get_device().first_depth_sensor()
+            # Enable auto-exposure
+            if depth_sensor.supports(rs.option.enable_auto_exposure):
+                depth_sensor.set_option(rs.option.enable_auto_exposure, 1)
+            # # Adjust laser power (0-360, higher = stronger IR illumination)
+            # depth_sensor.set_option(rs.option.laser_power, 150)  # Adjust based on environment
+            # # Set depth range (clipping)
+            # depth_sensor.set_option(rs.option.depth_units, 0.001)  # Ensure correct depth scaling
+        except RuntimeError:
+            print("Autodepth could not be activated")
         
         # intrinsic of the camera
         self.intr = {
@@ -156,15 +159,14 @@ def collect_calibration_files(robot, camera, poses, dirpath="."):
     
     with open(os.path.join(dirpath, "intrinsic.yaml"), "w") as f:
             yaml.dump(camera.intr, f, default_flow_style=False)
-
-    with open(os.path.join(dirpath, "poses.csv"), "w") as f:
-        writer = csv.writer(f)
-        writer.writerows([T_to_rotvec(sm.SE3(pose)) for pose in poses])
-    for i, pose in enumerate(poses):
-        robot.move_to_cart_pose(pose)
-        time.sleep(1)
-        camera_frame = camera.get_color_frame()
-        cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.jpg"), camera_frame)
+    # with open(os.path.join(dirpath, "poses.csv"), "w") as f:
+    #     writer = csv.writer(f)
+    #     writer.writerows([T_to_rotvec(sm.SE3(pose)) for pose in poses])
+    # for i, pose in enumerate(poses):
+    #     robot.move_to_cart_pose(pose)
+    #     time.sleep(1)
+    #     camera_frame = camera.get_color_frame()
+    #     cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.jpg"), camera_frame)
 
 def show_stream_and_save_frame(filepath, camera):
     while True:
@@ -177,12 +179,12 @@ def show_stream_and_save_frame(filepath, camera):
 
 if __name__ == "__main__":
     robot = Robot("192.168.1.100")
-    camera = RealSenseCamera()
+    camera = RealSenseCamera(({'color': [1280, 720]}))
     camera_frame = camera.get_color_frame()
     
     # show_stream_and_save_frame("frame.jpg", camera)
     
-    # cal_poses = collect_calibration_poses(robot, "./useful_files/camera_calibration/cal_poses")
-    # cal_poses = np.load("./useful_files/camera_calibration/cal_poses.npy")
-    # collect_calibration_files(robot, camera, cal_poses, "./useful_files/camera_calibration")
+    # cal_poses = collect_calibration_poses(robot, "./files/camera_calibration/cal_poses")
+    cal_poses = np.load("./files/camera_calibration/cal_poses.npy")
+    collect_calibration_files(robot, camera, cal_poses, "./files/camera_calibration")
 
