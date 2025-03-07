@@ -315,10 +315,12 @@ class VacuumGripper:
 
     def grab(self):
         self.robot.setStandardDigitalOut(self.id, True)
+        # self.robot.setToolDigitalOut(0, True)
         time.sleep(0.05)
     
     def release(self):
         self.robot.setStandardDigitalOut(self.id, False)
+        # self.robot.setToolDigitalOut(0, False)
         time.sleep(0.05)
 
     def get_status(self):

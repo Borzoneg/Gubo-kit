@@ -160,11 +160,11 @@ def collect_calibration_files(robot, camera, poses, dirpath="."):
     with open(os.path.join(dirpath, "poses.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerows([T_to_rotvec(sm.SE3(pose)) for pose in poses])
-    # for i, pose in enumerate(poses):
-        # robot.move_to_cart_pose(pose)
-        # time.sleep(1)
-        # camera_frame = camera.get_color_frame()
-        # cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.jpg"), camera_frame)
+    for i, pose in enumerate(poses):
+        robot.move_to_cart_pose(pose)
+        time.sleep(1)
+        camera_frame = camera.get_color_frame()
+        cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.jpg"), camera_frame)
 
 def show_stream_and_save_frame(filepath, camera):
     while True:
@@ -180,10 +180,9 @@ if __name__ == "__main__":
     camera = RealSenseCamera()
     camera_frame = camera.get_color_frame()
     
-    # show_stream_and_save_frame("background.jpg", camera)
     # show_stream_and_save_frame("frame.jpg", camera)
     
     # cal_poses = collect_calibration_poses(robot, "./useful_files/camera_calibration/cal_poses")
-    cal_poses = np.load("./useful_files/camera_calibration/cal_poses.npy")
-    collect_calibration_files(robot, camera, cal_poses, "./useful_files/camera_calibration")
+    # cal_poses = np.load("./useful_files/camera_calibration/cal_poses.npy")
+    # collect_calibration_files(robot, camera, cal_poses, "./useful_files/camera_calibration")
 
