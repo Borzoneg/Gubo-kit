@@ -19,7 +19,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from roboticstoolbox.backends import PyPlot
 from collections import deque
 from scipy.interpolate import CubicSpline
-from gubokit.utilities import T_to_rotvec
+from gubokit.utilities import T_to_rotvec, rotvec_to_T
 
 class RobotiqGripper:
     """
@@ -314,14 +314,16 @@ class VacuumGripper:
         self.id = id
 
     def grab(self):
+        time.sleep(0.2)
         self.robot.setStandardDigitalOut(self.id, True)
         # self.robot.setToolDigitalOut(0, True)
-        time.sleep(0.05)
+        time.sleep(0.2)
     
     def release(self):
+        time.sleep(0.2)
         self.robot.setStandardDigitalOut(self.id, False)
         # self.robot.setToolDigitalOut(0, False)
-        time.sleep(0.05)
+        time.sleep(0.2)
 
     def get_status(self):
         return self.robot.getDigitalOutState(self.id)
@@ -364,8 +366,8 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
             obj_pose (ndarray): pose of the object
         """
         self.open_gripper()
-        self.moveL(np.add(obj_pose, np.array([0, 0, 0.15, 0, 0, 0])), 0.1, 0.3)
-        self.moveL(obj_pose, 0.1, 0.3)
+        self.moveL(np.add(obj_pose, np.array([0, 0, 0.1, 0, 0, 0])), 0.1, 0.3)
+        self.moveL(obj_pose, 0.15, 0.3)
         self.close_gripper()
         self.move_up(0.2, speed=0.25)
         
@@ -417,8 +419,15 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
 
     def pick_and_place(self, pick_pose: ndarray, place_pose: ndarray):
         """pick an object and place it somewhere"""
-        self.grab_object(pick_pose)
-        self.moveL(place_pose, 0.1, 0.3)
+        pick_pose_cp = copy.deepcopy(pick_pose)
+        place_pose_cp = copy.deepcopy(place_pose)
+        if isinstance(pick_pose, sm.SE3):
+            pick_pose_cp = T_to_rotvec(pick_pose)
+        if isinstance(place_pose, sm.SE3):
+            place_pose_cp = T_to_rotvec(place_pose)
+        self.grab_object(pick_pose_cp)
+        self.moveL(np.add(place_pose_cp, np.array([0, 0, 0.15, 0, 0, 0])), 0.1, 0.3)
+        self.moveL(place_pose_cp, 0.1, 0.3)
         self.open_gripper()
 
     def move_to_cart_pose(self, pose: sm.SE3, speed=0.1):
@@ -972,3 +981,6 @@ def gen_s_poses(obj_pose:sm.SE3, radius, num_points: int=25):
         s.append(T)
     return s
 
+if __name__ == "__main__":
+    robot = Robot("192.168.1.100")
+    

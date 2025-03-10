@@ -8,16 +8,16 @@ import os
 import csv
 import time
 import yaml
+from numpy import ndarray
 
 class RealSenseCamera():
-    def __init__(self, enabled_strams={'color': [1280, 720], 'depth': [640, 480], 'infrared': [640, 480]}, extrinsic = sm.SE3([0, 0, 0])):
+    def __init__(self, extrinsic: sm.SE3, enabled_strams={'color': [1280, 720], 'depth': [640, 480], 'infrared': [640, 480]}, ):
         devices = rs.context().query_devices()
         if len(devices) == 0:
             raise RuntimeError("No Intel RealSense devices found!")
         # Pipeline for the realsense camera
         self.pipeline = rs.pipeline()
         config = rs.config()
-        print(enabled_strams)
         if 'color' in enabled_strams.keys():
             config.enable_stream(rs.stream.color, enabled_strams['color'][0], enabled_strams['color'][1], rs.format.bgr8, 10)
         if 'depth' in enabled_strams.keys():
@@ -68,14 +68,12 @@ class RealSenseCamera():
             if 'color' in frame_type:
                 color_frame = frames.get_color_frame()
                 if not color_frame:
-                    print("ad")
                     continue
                 color_image = np.asanyarray(color_frame.get_data())
                 cv2.imshow("Color", color_image)
             if 'depth' in frame_type:
                 depth_frame = frames.get_depth_frame()
                 if not depth_frame:
-                    print("ad")
                     continue
                 depth_image = np.asanyarray(depth_frame.get_data())
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
@@ -83,7 +81,6 @@ class RealSenseCamera():
             if 'infrared' in frame_type:
                 ir_frame_1 = frames.get_infrared_frame(1)
                 if not ir_frame_1:
-                    print("ad")
                     continue
                 ir_image_1 = np.asanyarray(ir_frame_1.get_data())
                 cv2.imshow("Infrared 1", ir_image_1)
@@ -123,6 +120,13 @@ class RealSenseCamera():
             if profile.is_video_stream_profile():
                 v_profile = profile.as_video_stream_profile()
                 print(f"Stream: {v_profile.stream_type()}, Resolution: {v_profile.width()}x{v_profile.height()}, FPS: {v_profile.fps()}, Format: {v_profile.format()}")
+
+def frame_pos_to_3dpos(frame_pos: ndarray, camera: RealSenseCamera):
+    # homogenized_pos = np.hstack((frame_pos, 1))
+    # Z = camera.extrinsic.t[2]
+    # TODO: get the actual algorithm
+    
+    return (sm.SE3([-0.2949, -0.2554, 0.1103]) * sm.SE3.Rx(np.pi) * sm.SE3.Rz(156.796, "deg"))
 
 def show_frames(title, frames):
     for i, frame in enumerate(frames):
@@ -175,16 +179,18 @@ def show_stream_and_save_frame(filepath, camera):
             break
         camera_frame = camera.get_color_frame()
         cv2.imshow("frame", camera_frame)
-    cv2.imwrite(os.path.join(filepath), camera_frame)
+    # cv2.imwrite(os.path.join(filepath), camera_frame)
 
 if __name__ == "__main__":
-    robot = Robot("192.168.1.100")
-    camera = RealSenseCamera(({'color': [1280, 720]}))
-    camera_frame = camera.get_color_frame()
-    
-    # show_stream_and_save_frame("frame.jpg", camera)
-    
+    # robot = Robot("192.168.1.100")
+    # camera = RealSenseCamera(({'color': [1280, 720]}))
+    # camera_frame = camera.get_color_frame()
+    # show_stream_and_save_frame("asd", camera=camera)
+    print(rotvec_to_T([-0.27596555111652893, -0.24000563138186107, 0.19635089421007676, 0.629052255900978, -3.0778753123258684, 2.616777766763829e-06]))
+    print(sm.SE3(-0.27596555111652893, -0.24000563138186107, 0.19635089421007676) * sm.SE3.Rx(np.pi) * sm.SE3.Rz(np.pi*669/768))
+    print(sm.SE3(-0.27596555111652893, -0.24000563138186107, 0.19635089421007676) * sm.SE3.Rx(np.pi) * sm.SE3.Rz(156.796, "deg"))
+    print(180-156.796)
     # cal_poses = collect_calibration_poses(robot, "./files/camera_calibration/cal_poses")
-    cal_poses = np.load("./files/camera_calibration/cal_poses.npy")
-    collect_calibration_files(robot, camera, cal_poses, "./files/camera_calibration")
+    # cal_poses = np.load("./files/camera_calibration/cal_poses.npy")
+    # collect_calibration_files(robot, camera, cal_poses, "./files/camera_calibration")
 
