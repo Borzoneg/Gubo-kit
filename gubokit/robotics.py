@@ -429,6 +429,7 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         self.moveL(np.add(place_pose_cp, np.array([0, 0, 0.15, 0, 0, 0])), 0.1, 0.3)
         self.moveL(place_pose_cp, 0.1, 0.3)
         self.open_gripper()
+        self.moveL(np.add(place_pose_cp, np.array([0, 0, 0.15, 0, 0, 0])), 0.1, 0.3)
 
     def move_to_cart_pose(self, pose: sm.SE3, speed=0.1):
         cp_pose = copy.deepcopy(pose)

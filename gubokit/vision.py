@@ -121,12 +121,13 @@ class RealSenseCamera():
                 v_profile = profile.as_video_stream_profile()
                 print(f"Stream: {v_profile.stream_type()}, Resolution: {v_profile.width()}x{v_profile.height()}, FPS: {v_profile.fps()}, Format: {v_profile.format()}")
 
-def frame_pos_to_3dpos(frame_pos: ndarray, camera: RealSenseCamera):
+def frame_pos_to_3dpos(frame_pos: ndarray, camera: RealSenseCamera, flag):
     # homogenized_pos = np.hstack((frame_pos, 1))
     # Z = camera.extrinsic.t[2]
     # TODO: get the actual algorithm
-    
-    return (sm.SE3([-0.2949, -0.2554, 0.1103]) * sm.SE3.Rx(np.pi) * sm.SE3.Rz(156.796, "deg"))
+    # pose = (sm.SE3([-0.295, -0.255, 0.110]) * sm.SE3.Rx(np.pi) * sm.SE3.Rz(156.796, "deg"))
+    pose = (sm.SE3([-0.281, -0.288, 0.110]) * sm.SE3.Rx(np.pi) * sm.SE3.Rz(156.796, "deg"))
+    return pose
 
 def show_frames(title, frames):
     for i, frame in enumerate(frames):
