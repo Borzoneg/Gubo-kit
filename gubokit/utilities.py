@@ -137,3 +137,6 @@ def rotvec_to_T(rotvec: ndarray):
 
 def T_to_rotvec(T: sm.SE3):
     return np.hstack((T.t, sm.SO3(T.R).eulervec()))
+
+if __name__ == "__main__":
+    pass
