@@ -21,16 +21,17 @@ class Player:
         new_circle_coord = (np.hstack((new_xy, new_xy)) + np.array([-self.r, -self.r, self.r, self.r]))
         self.canvas.coords(self.circle, *new_circle_coord)
         self.canvas.coords(self.text, *new_xy)
-        return 
     
 class Ball:
-    def __init__(self, canvas, start, r):
+    def __init__(self, canvas, r):
         self.canvas = canvas
         self.xy = []
-        self.r = r
-        start_coord = (np.hstack((start, start)) + np.array([-self.r*1.2, -self.r, self.r*1.2, self.r]))
-        self.circle = self.canvas.create_oval(*start_coord, fill='brown', outline='black')
-        
+        self.r = r       
+
+    def draw_ball(self, xy):
+        xy_coord = (np.hstack((xy, xy)) + np.array([-self.r*1.2, -self.r, self.r*1.2, self.r]))
+        self.circle = self.canvas.create_oval(*xy_coord, fill='brown', outline='black')
+    
     def add_to_queue(self, new_pos):
         self.xy.insert(0, new_pos)
 
@@ -38,13 +39,10 @@ class Ball:
         new_xy = self.xy.pop()
         new_circle_coord = (np.hstack((new_xy, new_xy)) + np.array([-self.r*1.2, -self.r, self.r*1.2, self.r]))
         self.canvas.coords(self.circle, *new_circle_coord)
-        return 
 
 class RugbyPlaysPlotter:
     def __init__(self, root, size=(700, 1000), title="Rugby plays", radius_player=10, start_point=(0, 0.5)):
         self.root = root
-        self.players = {}
-        self.ball = Ball()
         self.size = size
         self.start_point = np.array(start_point) * np.array(self.size)
 
@@ -58,6 +56,8 @@ class RugbyPlaysPlotter:
         self.filepath_entry.pack(side='left', padx=10)
         
         self.canvas.create_line(0, self.size[1] // 2, self.size[0], self.size[1] // 2, fill='white', width=2)  # Midline
+        self.players = {}
+        self.ball = Ball(self.canvas, self.radius_player//2)
 
     def add_player(self, name, start, team):
         self.players[name] = Player(self.canvas, name, start, self.radius_player, team)
@@ -74,9 +74,14 @@ class RugbyPlaysPlotter:
 
     def populate_ball_queue(self, balldict, end_t, step_t=1):
         for t in np.arange(0, end_t, step_t):
-            self.ball.add_to_queue()
+            # need to think about how to do this ???
+            if t == 0:
+                self.ball.draw_ball(balldict["start"])
+                self.ball.add_to_queue(balldict["start"]+ self.start_point)
+                continue
+            self.ball.add_to_queue(balldict["start"]+ self.start_point)
             for key in balldict:
-                print(key)
+                pass
 
     def populate_players_queue(self, players, end_t, step_t=1):
         self.players = {}
@@ -106,13 +111,15 @@ class RugbyPlaysPlotter:
         return movement
 
     def find_b_xy_at_t(self, target):
-        print(target)
+        return (self.size[0] // 2, self.size[1] // 2)
 
     def update(self):
-        if len(self.ball) > 0:
+        if len(self.ball.xy) > 0:
+            self.ball.next_step()
             for pkey in self.players:
+                # print("Player step")
                 self.players[pkey].next_step()  # Update position
-            self.ball.pop()
+            # print("ball step")
             
     def run(self):
         self.update()
