@@ -1,8 +1,9 @@
 {
     "players":  {
-                    "10": {"team": "team", "start":[ 5,  5], "speeds" : [["n", 5], ["e", 10]]},
-                    "12": {"team": "team", "start":[10, 10], "speeds" : [["n", 5], ["ne", 5], ["n", 5]]},
-                    "13": {"team": "team", "start":[15, 12], "speeds" : [["n", 5], ["nw", 5], ["n", 5]]}
+                    "10": {"team": "team", "start":[50,  50], "speeds" : [["n", 50], ["e", 100]]},
+                    "12": {"team": "team", "start":[150,  120], "speeds" : [["n", 50], ["ne", 50], ["n", 50]]},
+                    "13": {"team": "team", "start":[200,  100], "speeds" : [["n", 50], ["nw", 50], ["n", 50]]},
+                    "14": {"team": "team", "start":[0,  120], "speeds" : [["n", 50], ["ne", 100]]}
                 },
     "ball":     {
                     "possession" : {
@@ -11,5 +12,7 @@
                                     },
                     "speeds" :      []
                 },
-    "t" : 15
+    "t" : 150,
+    "speed" : 1,
+    "comment" : "Rock'n'Roll, 1 meter = 10 so if i want to place the ten 5 meter from the hafline start is (x, 50)"
 } 
