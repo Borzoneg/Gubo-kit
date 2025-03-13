@@ -41,6 +41,7 @@ class Ball:
         self.canvas.coords(self.circle, *new_circle_coord)
 
 class RugbyPlaysPlotter:
+    # TODO: pause button
     def __init__(self, root, size=(700, 1000), title="Rugby plays", radius_player=10, start_point=(0, 0.5)):
         self.root = root
         self.size = size
