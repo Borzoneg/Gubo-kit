@@ -14,10 +14,10 @@ class Player:
         self.text = self.canvas.create_text(*start, text=self.name, fill='white', font=('Helvetica', 10, 'bold'))
         
     def add_to_queue(self, new_pos):
-        self.xy.insert(0, new_pos)
+        self.xy.append(new_pos)
 
     def next_step(self):
-        new_xy = self.xy.pop()
+        new_xy = self.xy.pop(0)
         new_circle_coord = (np.hstack((new_xy, new_xy)) + np.array([-self.r, -self.r, self.r, self.r]))
         self.canvas.coords(self.circle, *new_circle_coord)
         self.canvas.coords(self.text, *new_xy)
@@ -26,17 +26,17 @@ class Ball:
     def __init__(self, canvas, r):
         self.canvas = canvas
         self.xy = []
-        self.r = r       
+        self.r = r  
 
     def draw_ball(self, xy):
         xy_coord = (np.hstack((xy, xy)) + np.array([-self.r*1.2, -self.r, self.r*1.2, self.r]))
         self.circle = self.canvas.create_oval(*xy_coord, fill='brown', outline='black')
     
     def add_to_queue(self, new_pos):
-        self.xy.insert(0, new_pos)
+        self.xy.append(new_pos)
 
     def next_step(self):
-        new_xy = self.xy.pop()
+        new_xy = self.xy.pop(0)
         new_circle_coord = (np.hstack((new_xy, new_xy)) + np.array([-self.r*1.2, -self.r, self.r*1.2, self.r]))
         self.canvas.coords(self.circle, *new_circle_coord)
 
@@ -51,39 +51,67 @@ class RugbyPlaysPlotter:
         self.canvas.pack(fill=tk.BOTH, expand=True)
         self.radius_player = radius_player
         # self.btn_frame = tk.Button(self.root, text="start play", command=self.start_play)
-        self.btn = tk.Button(self.root, text="start play", command=self.start_play)
-        self.btn.pack(side='left', padx=10)
+        self.add_play_btn = tk.Button(self.root, text="add play", command=self.add_play)
+        self.add_play_btn.pack(side='left', padx=10)
+        self.pause_play_btn = tk.Button(self.root, text="start", command=self.pause_start_play, width=5)
+        self.pause_play_btn.pack(side='left', padx=10)
+        self.step_play_btn = tk.Button(self.root, text="step", command=self.step_play)
+        self.step_play_btn.pack(side='left', padx=10)
         self.filepath_entry = tk.Entry(self.root, textvariable=tk.StringVar(value="./files/Rugby_plays/play.json"), width=30)
         self.filepath_entry.pack(side='left', padx=10)
+        self.t_label = tk.Label(self.root, text=f"{0:04d}")
+        self.t_label.pack(side='left', padx=10)
         
         self.canvas.create_line(0, self.size[1] // 2, self.size[0], self.size[1] // 2, fill='white', width=2)  # Midline
         self.players = {}
         self.ball = Ball(self.canvas, self.radius_player//2)
+        self.t = 0
+        self.paused = True
+        self.step = False
+
 
     def add_player(self, name, start, team):
         self.players[name] = Player(self.canvas, name, start, self.radius_player, team)
 
-    def start_play(self):
+    def add_play(self):
         filename = self.filepath_entry.get()
         self.canvas.delete("all")
         self.canvas.create_line(0, self.size[1] // 2, self.size[0], self.size[1] // 2, fill='white', width=2)  # Midline
+        self.t = 0
         with open(filename, 'r') as f:
             play_dict = json.load(f)
             speed = play_dict['speed']
             self.populate_players_queue(play_dict['players'], play_dict['t'], step_t=speed)
             self.populate_ball_queue(play_dict['ball'], play_dict['t'], step_t=speed)
 
-    def populate_ball_queue(self, balldict, end_t, step_t=1):
-        for t in np.arange(0, end_t, step_t):
-            # need to think about how to do this ???
-            if t == 0:
-                self.ball.draw_ball(balldict["start"])
-                self.ball.add_to_queue(balldict["start"]+ self.start_point)
-                continue
-            self.ball.add_to_queue(balldict["start"]+ self.start_point)
-            for key in balldict:
-                pass
+    def pause_start_play(self):
+        self.paused = not self.paused
+        new_label = "pause" if not self.paused else "play"
+        self.pause_play_btn.config(text=new_label)
+    
+    def step_play(self):
+        self.step = True
 
+    def populate_ball_queue(self, balldict, end_t, step_t=1):
+        possessions = balldict['possession']
+        for t in np.arange(0, end_t, step_t):
+            current_pos_b = None
+            for player_posession in possessions:
+                if possessions[player_posession][0] <= t <= possessions[player_posession][1]:
+                    current_pos_b = self.players[player_posession].xy[t]
+                    break
+                if t < possessions[player_posession][0]:
+                    # the target xy is the position of the player when he receives the ball
+                    target_xy = self.players[player_posession].xy[possessions[player_posession][0]] 
+                    # the target t is when he receives the ball
+                    target_t = possessions[player_posession][0]
+                    break
+            if current_pos_b is None: # the ball is flying
+                current_pos_b = self.ball.xy[t-1] + self.find_move_b_at_t(self.xy, target_xy=target_xy, target_t=target_t)
+            if t == 0:
+                self.ball.draw_ball(current_pos_b)
+            self.ball.add_to_queue(current_pos_b)
+        
     def populate_players_queue(self, players, end_t, step_t=1):
         self.players = {}
         for t in np.arange(0, end_t, step_t):
@@ -94,7 +122,6 @@ class RugbyPlaysPlotter:
                 current_pos_p = (p_start + p_movement)
                 if t == 0:
                     self.players[pkey] = Player(canvas=self.canvas, name=pkey, r=self.radius_player, start=p_start, team=p['team'])
-
                 self.players[pkey].add_to_queue(current_pos_p)
                 # self.players[pkey]["pos"].append(current_pos_p)
 
@@ -111,16 +138,27 @@ class RugbyPlaysPlotter:
                 break
         return movement
 
-    def find_b_xy_at_t(self, target):
+    def find_move_b_at_t(self, ball_xy, target_xy, target_t):
+        print(target_t, target_xy)
         return (self.size[0] // 2, self.size[1] // 2)
 
     def update(self):
-        if len(self.ball.xy) > 0:
-            self.ball.next_step()
-            for pkey in self.players:
-                # print("Player step")
-                self.players[pkey].next_step()  # Update position
-            # print("ball step")
+        if not self.paused:
+            if len(self.ball.xy) > 0:
+                self.ball.next_step()
+                for pkey in self.players:
+                    self.players[pkey].next_step()  # Update position
+                self.t += 1
+            self.t_label.config(text=f"{self.t:04d}")
+        if self.step:
+            if len(self.ball.xy) > 0:
+                self.ball.next_step()
+                for pkey in self.players:
+                    self.players[pkey].next_step()  # Update position
+                self.t += 1
+                self.t_label.config(text=f"{self.t:04d}")
+            self.step = False
+
             
     def run(self):
         self.update()
