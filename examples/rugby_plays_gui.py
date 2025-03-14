@@ -94,7 +94,13 @@ class RugbyPlaysPlotter:
 
     def populate_ball_queue(self, balldict, end_t, step_t=1):
         possessions = balldict['possession']
+        last_step = 0
         for player_posession in possessions:
+                poss_p_xy = [p_xy for p_xy in self.players[player_posession].xy[possessions[player_posession][0] : possessions[player_posession][1]]]
+                if possessions[player_posession][0] != last_step:
+                    self.ball.xy.extend(np.full((2, possessions[player_posession][0] - last_step), (0, 0)))
+                if possessions[player_posession][0] == 0:
+                    self.ball.draw_ball(poss_p_xy[0])
                 self.ball.xy.extend([p_xy for p_xy in self.players[player_posession].xy[possessions[player_posession][0] : possessions[player_posession][1]]])
                 # if possessions[player_posession][0] <= t <= possessions[player_posession][1]:
                     # current_pos_b = self.players[player_posession].xy[t]
@@ -120,7 +126,6 @@ class RugbyPlaysPlotter:
         #     if current_pos_b is None: # the ball is flying
         #         current_pos_b = self.ball.xy[t-1] + self.find_move_b_at_t(self.xy, target_xy=target_xy, target_t=target_t)
         #     if t == 0:
-        #         self.ball.draw_ball(current_pos_b)
         #     self.ball.add_to_queue(current_pos_b)
         
     def populate_players_queue(self, players, end_t, step_t=1):
