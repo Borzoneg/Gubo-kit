@@ -7,13 +7,13 @@
                     "14": {"team": "team", "start":[50,   150], "speeds" : [["n", 10], ["ne", 140]]}
                 },
     "ball":     {
-                    "possession" : {
-                                    "9": [0, 45], 
-                                    "10": [64, 65], 
-                                    "13": [85, 150]
-                                    }
+                    "possession" : [
+                                    ["9", [0, 45]], 
+                                    ["10", [64, 65]], 
+                                    ["13", [85, 150]]
+                                    ]
                 },
-    "t" : 1000,
+    "t" : 150,
     "speed" : 1,
-    "comment" : "Rock'n'Roll, 1 meter = 10 so if i want to place the ten 5 meter from the hafline start is (x, 50)"
+    "comment" : "1 meter = 10 so if i want to place the ten 5 meter from the hafline start is (x, 50)"
 } 

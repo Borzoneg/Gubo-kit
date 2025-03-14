@@ -1,6 +1,8 @@
 import tkinter as tk
 import numpy as np
 import json
+import sys
+import os
 
 class Player:
     def __init__(self, canvas, name, start, r, team):
@@ -78,8 +80,9 @@ class RugbyPlaysPlotter:
     def add_player(self, name, start, team):
         self.players[name] = Player(self.canvas, name, start, self.radius_player, team)
 
-    def add_play(self):
-        filename = self.filepath_entry.get()
+    def add_play(self, filename=None):
+        if filename is None:
+            filename = self.filepath_entry.get()
         self.canvas.delete("all")
         self.canvas.create_line(0, self.size[1] // 2, self.size[0], self.size[1] // 2, fill='white', width=2)  # Midline
         self.t = 0
@@ -87,7 +90,7 @@ class RugbyPlaysPlotter:
             play_dict = json.load(f)
             speed = play_dict['speed']
             self.populate_players_queue(play_dict['players'], play_dict['t'], step_t=speed)
-            self.populate_ball_queue(play_dict['ball'], play_dict['t'], step_t=speed)
+            self.populate_ball_queue(play_dict['ball'], step_t=speed)
 
     def pause_start_play(self):
         self.paused = not self.paused
@@ -97,21 +100,24 @@ class RugbyPlaysPlotter:
     def step_play(self):
         self.step = True
 
-    def populate_ball_queue(self, balldict, end_t, step_t=1):
+    def populate_ball_queue(self, balldict, step_t=1):
         self.ball.flush_queue()
         possessions = balldict['possession']
         last_step = 0
-        for player_posession in possessions:
-                poss_p_xy = [p_xy for p_xy in self.players[player_posession].xy[possessions[player_posession][0] : possessions[player_posession][1]]]
-                if possessions[player_posession][0] == 0:
-                    self.ball.draw_ball(poss_p_xy[0])
-                if possessions[player_posession][0] != last_step:
-                    # ball_in_air = [[100, 500] for _ in range(int(possessions[player_posession][0] - last_step))]
-                    ball_in_air = self.find_move_b_at_t(ball_xy=self.ball.xy[-1], target_xy=self.players[player_posession].xy[possessions[player_posession][0]], steps=int(possessions[player_posession][0] - last_step))
-                    self.ball.xy.extend(ball_in_air)
-                ball_in_possession = [p_xy for p_xy in self.players[player_posession].xy[possessions[player_posession][0] : possessions[player_posession][1]+1]]
-                self.ball.xy.extend(ball_in_possession)
-                last_step = possessions[player_posession][1]+1
+        for player_posession, idxs in possessions:
+            print(player_posession)
+            print(idxs)
+            start_poss, end_poss = idxs[0]//step_t, idxs[1]//step_t
+            poss_p_xy = [p_xy for p_xy in self.players[player_posession].xy[start_poss : end_poss]]
+            if start_poss == 0:
+                self.ball.draw_ball(poss_p_xy[0])
+            if start_poss != last_step:
+                # ball_in_air = [[100, 500] for _ in range(int(start_poss - last_step))]
+                ball_in_air = self.find_move_b_at_t(ball_xy=self.ball.xy[-1], target_xy=self.players[player_posession].xy[start_poss], steps=int(start_poss - last_step))
+                self.ball.xy.extend(ball_in_air)
+            ball_in_possession = [p_xy for p_xy in self.players[player_posession].xy[start_poss : end_poss+1]]
+            self.ball.xy.extend(ball_in_possession)
+            last_step = end_poss+1
         
     def populate_players_queue(self, players, end_t, step_t=1):
         self.players = {}
@@ -183,6 +189,9 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("Rugby Play Simulation")
     rugby_plotter = RugbyPlaysPlotter(root)
+    if len(sys.argv) > 1:
+        rugby_plotter.add_play(os.path.join("./files/Rugby_plays", f"{sys.argv[1]}.json"))
+        rugby_plotter.paused = False
 
     # rugby_plotter.add_player('Player1', (100, 100), 'team')
     # rugby_plotter.add_player('Player2', (200, 200), 'opp')
