@@ -95,16 +95,16 @@ class RugbyPlaysPlotter:
     def populate_ball_queue(self, balldict, end_t, step_t=1):
         possessions = balldict['possession']
         for player_posession in possessions:
-                print([p_xy for p_xy in self.players[player_posession].xy[possessions[player_posession][0] : possessions[player_posession][1]]])
-                if possessions[player_posession][0] <= t <= possessions[player_posession][1]:
-                    current_pos_b = self.players[player_posession].xy[t]
-                    break
-                if t < possessions[player_posession][0]:
+                self.ball.xy.extend([p_xy for p_xy in self.players[player_posession].xy[possessions[player_posession][0] : possessions[player_posession][1]]])
+                # if possessions[player_posession][0] <= t <= possessions[player_posession][1]:
+                    # current_pos_b = self.players[player_posession].xy[t]
+                    # break
+                # if t < possessions[player_posession][0]:
                     # the target xy is the position of the player when he receives the ball
-                    target_xy = self.players[player_posession].xy[possessions[player_posession][0]] 
+                    # target_xy = self.players[player_posession].xy[possessions[player_posession][0]] 
                     # the target t is when he receives the ball
-                    target_t = possessions[player_posession][0]
-                    break
+                    # target_t = possessions[player_posession][0]
+                    # break
         # for t in np.arange(0, end_t, step_t):
         #     current_pos_b = None
         #     for player_posession in possessions:
