@@ -21,6 +21,9 @@ class Player:
         new_circle_coord = (np.hstack((new_xy, new_xy)) + np.array([-self.r, -self.r, self.r, self.r]))
         self.canvas.coords(self.circle, *new_circle_coord)
         self.canvas.coords(self.text, *new_xy)
+
+    def flush_queue(self):
+        self.xy = []
     
 class Ball:
     def __init__(self, canvas, r):
@@ -40,6 +43,9 @@ class Ball:
         new_circle_coord = (np.hstack((new_xy, new_xy)) + np.array([-self.r*1.2, -self.r, self.r*1.2, self.r]))
         self.canvas.coords(self.circle, *new_circle_coord)
 
+    def flush_queue(self):
+        self.xy = []
+
 class RugbyPlaysPlotter:
     # TODO: pause button
     def __init__(self, root, size=(700, 1000), title="Rugby plays", radius_player=10, start_point=(0, 0.5)):
@@ -57,9 +63,9 @@ class RugbyPlaysPlotter:
         self.pause_play_btn.pack(side='left', padx=10)
         self.step_play_btn = tk.Button(self.root, text="step", command=self.step_play)
         self.step_play_btn.pack(side='left', padx=10)
-        self.filepath_entry = tk.Entry(self.root, textvariable=tk.StringVar(value="./files/Rugby_plays/play.json"), width=30)
+        self.filepath_entry = tk.Entry(self.root, textvariable=tk.StringVar(value="./files/Rugby_plays/rocknroll12.json"), width=30)
         self.filepath_entry.pack(side='left', padx=10)
-        self.t_label = tk.Label(self.root, text=f"{0:04d}")
+        self.t_label = tk.Label(self.root, text="----")
         self.t_label.pack(side='left', padx=10)
         
         self.canvas.create_line(0, self.size[1] // 2, self.size[0], self.size[1] // 2, fill='white', width=2)  # Midline
@@ -68,7 +74,6 @@ class RugbyPlaysPlotter:
         self.t = 0
         self.paused = True
         self.step = False
-
 
     def add_player(self, name, start, team):
         self.players[name] = Player(self.canvas, name, start, self.radius_player, team)
@@ -93,40 +98,20 @@ class RugbyPlaysPlotter:
         self.step = True
 
     def populate_ball_queue(self, balldict, end_t, step_t=1):
+        self.ball.flush_queue()
         possessions = balldict['possession']
         last_step = 0
         for player_posession in possessions:
                 poss_p_xy = [p_xy for p_xy in self.players[player_posession].xy[possessions[player_posession][0] : possessions[player_posession][1]]]
-                if possessions[player_posession][0] != last_step:
-                    self.ball.xy.extend(np.full((2, possessions[player_posession][0] - last_step), (0, 0)))
                 if possessions[player_posession][0] == 0:
                     self.ball.draw_ball(poss_p_xy[0])
-                self.ball.xy.extend([p_xy for p_xy in self.players[player_posession].xy[possessions[player_posession][0] : possessions[player_posession][1]]])
-                # if possessions[player_posession][0] <= t <= possessions[player_posession][1]:
-                    # current_pos_b = self.players[player_posession].xy[t]
-                    # break
-                # if t < possessions[player_posession][0]:
-                    # the target xy is the position of the player when he receives the ball
-                    # target_xy = self.players[player_posession].xy[possessions[player_posession][0]] 
-                    # the target t is when he receives the ball
-                    # target_t = possessions[player_posession][0]
-                    # break
-        # for t in np.arange(0, end_t, step_t):
-        #     current_pos_b = None
-        #     for player_posession in possessions:
-        #         if possessions[player_posession][0] <= t <= possessions[player_posession][1]:
-        #             current_pos_b = self.players[player_posession].xy[t]
-        #             break
-        #         if t < possessions[player_posession][0]:
-        #             # the target xy is the position of the player when he receives the ball
-        #             target_xy = self.players[player_posession].xy[possessions[player_posession][0]] 
-        #             # the target t is when he receives the ball
-        #             target_t = possessions[player_posession][0]
-        #             break
-        #     if current_pos_b is None: # the ball is flying
-        #         current_pos_b = self.ball.xy[t-1] + self.find_move_b_at_t(self.xy, target_xy=target_xy, target_t=target_t)
-        #     if t == 0:
-        #     self.ball.add_to_queue(current_pos_b)
+                if possessions[player_posession][0] != last_step:
+                    # ball_in_air = [[100, 500] for _ in range(int(possessions[player_posession][0] - last_step))]
+                    ball_in_air = self.find_move_b_at_t(ball_xy=self.ball.xy[-1], target_xy=self.players[player_posession].xy[possessions[player_posession][0]], steps=int(possessions[player_posession][0] - last_step))
+                    self.ball.xy.extend(ball_in_air)
+                ball_in_possession = [p_xy for p_xy in self.players[player_posession].xy[possessions[player_posession][0] : possessions[player_posession][1]+1]]
+                self.ball.xy.extend(ball_in_possession)
+                last_step = possessions[player_posession][1]+1
         
     def populate_players_queue(self, players, end_t, step_t=1):
         self.players = {}
@@ -140,23 +125,38 @@ class RugbyPlaysPlotter:
                     self.players[pkey] = Player(canvas=self.canvas, name=pkey, r=self.radius_player, start=p_start, team=p['team'])
                 self.players[pkey].add_to_queue(current_pos_p)
                 # self.players[pkey]["pos"].append(current_pos_p)
-
+    
     def find_p_xy_at_t(self, t, speeds):
-        direction_dict = {'n': np.array((0, -1)), 'ne': np.array((1, -1)), 'e': np.array((1, 0)), 'se': np.array((1, 1)),
-                          's': np.array((0, 1)), 'sw': np.array((-1, 1)), 'w': np.array((-1, 0)), 'nw': np.array((-1, -1)), 'o': np.array((0, 0))}
+        direction_dict = {  'e'  : -0 * np.pi / 1,
+                            'nee': -1 * np.pi / 6,
+                            'ne' : -1 * np.pi / 4,
+                            'nne': -1 * np.pi / 3,
+                            'n'  : -1 * np.pi / 2,
+                            'nnw': -2 * np.pi / 3,
+                            'nw' : -3 * np.pi / 4,
+                            'nww': -5 * np.pi / 6,
+                            'w'  : -1 * np.pi / 1,
+                            'sww': -7 * np.pi / 6,
+                            'sw' : -5 * np.pi / 4,
+                            'ssw': -4 * np.pi / 3,
+                            's'  : -3 * np.pi / 2,
+                            'sse': -5 * np.pi / 3,
+                            'se' : -7 * np.pi / 4,
+                            'see': -11 * np.pi / 6}
+
         movement = np.zeros(2)
         for s in speeds:
+            direction = np.array((np.cos(direction_dict[s[0]]), np.sin(direction_dict[s[0]]))) if s[0] != 'o' else np.array((0, 0))
             if t >= s[1]: # if t is above the end time of this speed we use all the speed and remove it from the t 
-                movement += direction_dict[s[0]] * s[1]
+                movement += direction * s[1]
                 t -= s[1]
             else:
-                movement += direction_dict[s[0]] * (t)
+                movement += direction * (t)
                 break
         return movement
 
-    def find_move_b_at_t(self, ball_xy, target_xy, target_t):
-        print(target_t, target_xy)
-        return (self.size[0] // 2, self.size[1] // 2)
+    def find_move_b_at_t(self, ball_xy, target_xy, steps):
+        return np.linspace(ball_xy, target_xy, steps)
 
     def update(self):
         if not self.paused:
@@ -164,17 +164,16 @@ class RugbyPlaysPlotter:
                 self.ball.next_step()
                 for pkey in self.players:
                     self.players[pkey].next_step()  # Update position
+                self.t_label.config(text=f"{self.t:04d}")
                 self.t += 1
-            self.t_label.config(text=f"{self.t:04d}")
         if self.step:
             if len(self.ball.xy) > 0:
                 self.ball.next_step()
                 for pkey in self.players:
                     self.players[pkey].next_step()  # Update position
-                self.t += 1
                 self.t_label.config(text=f"{self.t:04d}")
+                self.t += 1
             self.step = False
-
             
     def run(self):
         self.update()
