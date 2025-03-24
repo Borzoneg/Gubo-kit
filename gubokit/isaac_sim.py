@@ -103,7 +103,7 @@ class PoseArraySubscriber():
     def spawn_pose(self, T: sm.SE3):
         prim_path = self.prim_path + "_" + "{:04}".format(self.i)
         self.i += 1
-        add_reference_to_stage(usd_path=os.environ['FLUENTLY_WS_PATH'] + "/props/arrow.usd", prim_path=prim_path)
+        add_reference_to_stage(usd_path=os.environ['FLUENTLY_WS_PATH'] + "/props/z_axis.usd", prim_path=prim_path)
         point_obj = self.world.scene.add(XFormPrim(
                                                     prim_path=prim_path,
                                                     name=prim_path.split("/")[-1],
@@ -114,10 +114,13 @@ class PoseArraySubscriber():
         return point_obj
     
     def reset_poses(self):
-        for i in range(self.i):
-            print("removing: ", self.prim_path+ "_" + "{:04}".format(i))
-            self.world.scene.remove_object(self.prim_path.split('/')[-1] + "_" + "{:04}".format(i))
-        self.i = 0
+        try:
+            for i in range(self.i):
+                print("removing: ", self.prim_path+ "_" + "{:04}".format(i))
+                self.world.scene.remove_object(self.prim_path.split('/')[-1] + "_" + "{:04}".format(i))
+            self.i = 0
+        except:
+            print("Poses not found")
 
 class SimulationObject(XFormPrim):
     def __init__(self, prim_path, name = "xform_prim", position = None, translation = None, orientation = None, scale = None, visible = None):
