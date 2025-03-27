@@ -122,10 +122,8 @@ class RealSenseCamera():
                 print(f"Stream: {v_profile.stream_type()}, Resolution: {v_profile.width()}x{v_profile.height()}, FPS: {v_profile.fps()}, Format: {v_profile.format()}")
 
 def frame_pos_to_3dpos(frame_pos: ndarray, camera: RealSenseCamera, Z: float): 
-    X = ((frame_pos[0] - 123) * Z) / 1
-    Y = ((frame_pos[1] - 123) * Z) / 1
-    # X = ((frame_pos[0] - camera.optical_centre_x) * Z) / camera.fx
-    # Y = ((frame_pos[1] - camera.optical_centre_y) * Z) / camera.fy
+    X = ((frame_pos[0] - camera.optical_centre_x) * Z) / camera.fx
+    Y = ((frame_pos[1] - camera.optical_centre_y) * Z) / camera.fy
     return np.array([X, Y, Z])
 
 def show_frames(title, frames):
