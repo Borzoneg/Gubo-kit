@@ -11,7 +11,7 @@ import yaml
 from numpy import ndarray
 
 class RealSenseCamera():
-    def __init__(self, extrinsic: sm.SE3, enabled_strams={'color': [1280, 720], 'depth': [640, 480], 'infrared': [640, 480]}, ):
+    def __init__(self, extrinsic: sm.SE3, enabled_strams={'color': [1280, 720], 'depth': [640, 480], 'infrared': [640, 480]}):
         devices = rs.context().query_devices()
         if len(devices) == 0:
             raise RuntimeError("No Intel RealSense devices found!")
@@ -19,7 +19,7 @@ class RealSenseCamera():
         self.pipeline = rs.pipeline()
         config = rs.config()
         if 'color' in enabled_strams.keys():
-            config.enable_stream(rs.stream.color, enabled_strams['color'][0], enabled_strams['color'][1], rs.format.bgr8, 10)
+            config.enable_stream(rs.stream.color, enabled_strams['color'][0], enabled_strams['color'][1], rs.format.bgr8, 30)
         if 'depth' in enabled_strams.keys():
             config.enable_stream(rs.stream.depth, enabled_strams['depth'][0], enabled_strams['depth'][1], rs.format.z16, 30)
         if 'infrared' in enabled_strams.keys():
@@ -121,13 +121,12 @@ class RealSenseCamera():
                 v_profile = profile.as_video_stream_profile()
                 print(f"Stream: {v_profile.stream_type()}, Resolution: {v_profile.width()}x{v_profile.height()}, FPS: {v_profile.fps()}, Format: {v_profile.format()}")
 
-def frame_pos_to_3dpos(frame_pos: ndarray, camera: RealSenseCamera, flag):
-    # homogenized_pos = np.hstack((frame_pos, 1))
-    # Z = camera.extrinsic.t[2]
-    # TODO: get the actual algorithm
-    # pose = (sm.SE3([-0.295, -0.255, 0.110]) * sm.SE3.Rx(np.pi) * sm.SE3.Rz(156.796, "deg"))
-    pose = (sm.SE3([-0.281, -0.288, 0.110]) * sm.SE3.Rx(np.pi) * sm.SE3.Rz(156.796, "deg"))
-    return pose
+def frame_pos_to_3dpos(frame_pos: ndarray, camera: RealSenseCamera, Z: float): 
+    X = ((frame_pos[0] - 123) * Z) / 1
+    Y = ((frame_pos[1] - 123) * Z) / 1
+    # X = ((frame_pos[0] - camera.optical_centre_x) * Z) / camera.fx
+    # Y = ((frame_pos[1] - camera.optical_centre_y) * Z) / camera.fy
+    return np.array([X, Y, Z])
 
 def show_frames(title, frames):
     for i, frame in enumerate(frames):
@@ -184,13 +183,9 @@ def show_stream_and_save_frame(filepath, camera):
 
 if __name__ == "__main__":
     # robot = Robot("192.168.1.100")
-    # camera = RealSenseCamera(({'color': [1280, 720]}))
+    camera = RealSenseCamera(({'color': [1280, 720]}))
     # camera_frame = camera.get_color_frame()
     # show_stream_and_save_frame("asd", camera=camera)
-    print(rotvec_to_T([-0.27596555111652893, -0.24000563138186107, 0.19635089421007676, 0.629052255900978, -3.0778753123258684, 2.616777766763829e-06]))
-    print(sm.SE3(-0.27596555111652893, -0.24000563138186107, 0.19635089421007676) * sm.SE3.Rx(np.pi) * sm.SE3.Rz(np.pi*669/768))
-    print(sm.SE3(-0.27596555111652893, -0.24000563138186107, 0.19635089421007676) * sm.SE3.Rx(np.pi) * sm.SE3.Rz(156.796, "deg"))
-    print(180-156.796)
     # cal_poses = collect_calibration_poses(robot, "./files/camera_calibration/cal_poses")
     # cal_poses = np.load("./files/camera_calibration/cal_poses.npy")
     # collect_calibration_files(robot, camera, cal_poses, "./files/camera_calibration")
