@@ -14,7 +14,7 @@
                                     ["10", [47,120]]
                                    ]
                 },
-    "t" : 120,
-    "speed" : 1,
+    "t" : 150,
+    "speed" : 2,
     "comment" : "1 meter = 10 so if i want to place the ten 5 meter from the hafline start is (x, 50)"
 } 
