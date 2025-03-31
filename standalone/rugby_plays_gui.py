@@ -20,7 +20,7 @@ class Player:
 
     def next_step(self):
         new_xy = self.xy.pop(0)
-        print(f"player: {self.name} : {new_xy}")
+        print(f"player[{str(self.name):2s} : [{int(new_xy[0])}, {int(new_xy[1])}]]")
         new_circle_coord = (np.hstack((new_xy, new_xy)) + np.array([-self.r, -self.r, self.r, self.r]))
         self.canvas.coords(self.circle, *new_circle_coord)
         self.canvas.coords(self.text, *new_xy)
@@ -82,7 +82,7 @@ class Ball:
 
     def next_step(self):
         new_xy = self.xy.pop(0)
-        print(f"ball {new_xy}")
+        print(f"ball: [{new_xy[0]:08.3f}, {new_xy[1]:08.3f}]")
         new_circle_coord = (np.hstack((new_xy, new_xy)) + np.array([-self.r*1.2, -self.r, self.r*1.2, self.r]))
         self.canvas.coords(self.circle, *new_circle_coord)
 
@@ -199,7 +199,6 @@ class RugbyPlaysPlotter:
             arrow.extend_queue([[-1, -1]] * (end_t - (arrow_dict['spawn_t'] + arrow_dict['duration_t'])))
             self.arrows.append(arrow)
             
-
     def find_p_xy_at_t(self, t, speeds):
         direction_dict = {  'e'  : -0 * np.pi / 1,
                             'nee': -1 * np.pi / 6,
@@ -234,9 +233,9 @@ class RugbyPlaysPlotter:
 
     def update(self):
         if not self.paused or self.step:
-            print(f"{self.t:03d}:", end=" ")
             self.step = False
             if len(self.ball.xy) > 0:
+                print(f"{self.t:03d}:", end=" ")
                 self.ball.next_step()
                 for pkey in self.players:
                     self.players[pkey].next_step()  # Update position
@@ -244,7 +243,7 @@ class RugbyPlaysPlotter:
                 for arrow in self.arrows:
                     arrow.next_step()
                 self.t += 1
-            print("="*100)
+                print("="*100)
             
     def run(self):
         self.update()
