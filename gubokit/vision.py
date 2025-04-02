@@ -154,37 +154,48 @@ def collect_calibration_poses(robot, filename=None):
 
 def collect_calibration_files(robot, camera, poses, dirpath="."):
     photos_dir = os.path.join(dirpath, "photos")
-    poses_dir = os.path.join(dirpath, "poses")
     os.makedirs(photos_dir, exist_ok=True)
-    os.makedirs(poses_dir, exist_ok=True)
     input("Press enter to start collecting the photos (the robot will move through each poses provided)>>>")
-    
     with open(os.path.join(dirpath, "intrinsic.yaml"), "w") as f:
             yaml.dump(camera.intr, f, default_flow_style=False)
-    # with open(os.path.join(dirpath, "poses.csv"), "w") as f:
-    #     writer = csv.writer(f)
-    #     writer.writerows([T_to_rotvec(sm.SE3(pose)) for pose in poses])
-    # for i, pose in enumerate(poses):
-    #     robot.move_to_cart_pose(pose)
-    #     time.sleep(1)
-    #     camera_frame = camera.get_color_frame()
-    #     cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.jpg"), camera_frame)
+    with open(os.path.join(dirpath, "poses.csv"), "w") as f:
+        writer = csv.writer(f)
+        for i, pose in enumerate(poses):
+            robot.move_to_cart_pose(pose)
+            time.sleep(3)
+            writer.writerow(robot.getActualTCPPose())   
+            camera_frame = camera.get_color_frame()
+            cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.jpg"), camera_frame)
 
 def show_stream_and_save_frame(filepath, camera):
     while True:
-        key = cv2.waitKey(1)
-        if key == 13:
-            break
         camera_frame = camera.get_color_frame()
         cv2.imshow("frame", camera_frame)
-    # cv2.imwrite(os.path.join(filepath), camera_frame)
+        key = chr(0xff & cv2.waitKey(1))
+        if key == 'q':
+            break
+        elif key == 's':
+            cv2.imwrite(os.path.join(filepath), camera_frame)
+        elif key == 't':
+            cv2.imwrite(os.path.join(filepath), camera_frame)
+
 
 if __name__ == "__main__":
     # robot = Robot("192.168.1.100")
-    camera = RealSenseCamera(({'color': [1280, 720]}))
-    # camera_frame = camera.get_color_frame()
-    # show_stream_and_save_frame("asd", camera=camera)
-    # cal_poses = collect_calibration_poses(robot, "./files/camera_calibration/cal_poses")
-    # cal_poses = np.load("./files/camera_calibration/cal_poses.npy")
-    # collect_calibration_files(robot, camera, cal_poses, "./files/camera_calibration")
+    # camera = RealSenseCamera(({'color': [1280, 720]}))
+    # print(robot.getActualTCPPose())
+    # poses = collect_calibration_poses(robot, "files/camera_calibration/cal_poses.npy")
+    # poses = np.load("files/camera_calibration/cal_poses.npy")
+    # collect_calibration_files(robot, camera, poses, "files/camera_calibration")
+    
+    from ultralytics import YOLO
 
+    # Load a pretrained YOLOv8 model
+    model = YOLO("yolov8n.pt")  # You can use yolov8m.pt or yolov8x.pt for better accuracy
+
+    # Train the model
+    model.train(data="files/yolo_dataset_pack/dataset.yaml", epochs=50, imgsz=640)
+    result = model("/home/gu/fluently_ws/fluently_mem/data/i4.0_frames/square02.png")
+    result[0].show()
+    result = model("/home/gu/fluently_ws/fluently_mem/data/i4.0_frames/trapezoid02.png")
+    result[0].show()

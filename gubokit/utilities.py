@@ -5,6 +5,8 @@ import numpy as np
 import spatialmath as sm
 import matplotlib.pyplot as plt
 from numpy import ndarray
+import csv
+import json
 
 class CustomLogger(logging.Logger):
     """
@@ -138,5 +140,23 @@ def rotvec_to_T(rotvec: ndarray):
 def T_to_rotvec(T: sm.SE3):
     return np.hstack((T.t, sm.SO3(T.R).eulervec()))
 
+def vgg_to_yolo(csv_filepath, yolo_path):
+    with open(csv_filepath, 'r') as f:
+        reader = csv.reader(f)
+        next(reader)  # Skip header
+        for row in reader:
+            filename = str(row[0])
+            label = json.loads((row[-1]))['label']
+            if label == "tra00":
+                label = 0
+            else:
+                label = 1
+            x, y, w, h = json.loads((row[-2]))['x'], json.loads((row[-2]))['y'], json.loads((row[-2]))['width'], json.loads((row[-2]))['height']
+
+            label_str = f"{label} {x} {y} {w} {h}"
+            with open(os.path.join(yolo_path, filename.replace("png", "txt")), "a") as f:
+                f.write(label_str + "\n") 
+
 if __name__ == "__main__":
-    pass
+    #TODO: normalize coords
+    vgg_to_yolo("files/yolo_dataset_pack/train_mem.csv", "files/yolo_dataset_pack/labels/train")
