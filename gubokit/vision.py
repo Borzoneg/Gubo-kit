@@ -189,13 +189,13 @@ if __name__ == "__main__":
     # collect_calibration_files(robot, camera, poses, "files/camera_calibration")
     
     from ultralytics import YOLO
-
-    # Load a pretrained YOLOv8 model
-    model = YOLO("yolov8n.pt")  # You can use yolov8m.pt or yolov8x.pt for better accuracy
-
-    # Train the model
-    model.train(data="files/yolo_dataset_pack/dataset.yaml", epochs=50, imgsz=640)
-    result = model("/home/gu/fluently_ws/fluently_mem/data/i4.0_frames/square02.png")
-    result[0].show()
-    result = model("/home/gu/fluently_ws/fluently_mem/data/i4.0_frames/trapezoid02.png")
-    result[0].show()
+    model = YOLO("yolov8n.pt")
+    model.train(data="data/in/yolo_dataset_pack/dataset.yaml", project="files/pack_training", name="experiment_1",
+                epochs=10, imgsz=640, iou=0.2)
+    # model = YOLO("/home/gu/Gubo-kit/files/pack_training/experiment_13/weights/best.pt") 
+    imgs = ["square01", "square02", "square03", "trapezoid01", "trapezoid02", "trapezoid03"]
+    for img in imgs:
+        start = time.time()
+        result = model(os.path.join("/home/gu/fluently_ws/fluently_mem/data/i4.0_frames", img) + ".png")
+        result[0].show()
+        input(">>>")

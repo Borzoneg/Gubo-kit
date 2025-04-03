@@ -1,7 +1,0 @@
-path: /home/gu/Gubo-kit/files/yolo_dataset_pack  # Change this to your dataset folder
-train: images/train
-val: images/valid
-
-names:
-  0: Trapezoid
-  1: Square
