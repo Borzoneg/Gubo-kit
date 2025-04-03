@@ -9,6 +9,7 @@ import csv
 import time
 import yaml
 from numpy import ndarray
+from ultralytics import YOLO
 
 class RealSenseCamera():
     def __init__(self, extrinsic: sm.SE3, enabled_strams={'color': [1280, 720], 'depth': [640, 480], 'infrared': [640, 480]}):
@@ -179,6 +180,27 @@ def show_stream_and_save_frame(filepath, camera):
         elif key == 't':
             cv2.imwrite(os.path.join(filepath), camera_frame)
 
+def train_YOLO(test_imgs_path, model="yolov8n.pt", yaml_path="data/in/yolo_dataset_pack/dataset.yaml", savepath="files/yolo", 
+               name="experiment", epochs=50, imgsz=640, iou=0.5):
+    """
+    Args:
+        test_imgs_path (_type_): should be a list of path to images that we did not train with
+        model (str, optional): _description_. Defaults to "yolov8n.pt".
+        yaml_path (str, optional): _description_. Defaults to "data/in/yolo_dataset_pack/dataset.yaml".
+        savepath (str, optional): _description_. Defaults to "files/yolo".
+        name (str, optional): _description_. Defaults to "experiment".
+        epochs (int, optional): _description_. Defaults to 50.
+        imgsz (int, optional): _description_. Defaults to 640.
+        iou (float, optional): _description_. Defaults to 0.5.
+    """
+    model = YOLO(model)
+    model.train(data=yaml_path, project=savepath, name=name,
+                epochs=50, imgsz=640, iou=0.5)
+    # model = YOLO("/home/gu/Gubo-kit/files/pack_training/experiment_13/weights/best.pt") 
+    for img_path in test_imgs_path:
+        result = model(img_path)
+        result[0].show()
+        input(">>>")
 
 if __name__ == "__main__":
     # robot = Robot("192.168.1.100")
@@ -187,15 +209,7 @@ if __name__ == "__main__":
     # poses = collect_calibration_poses(robot, "files/camera_calibration/cal_poses.npy")
     # poses = np.load("files/camera_calibration/cal_poses.npy")
     # collect_calibration_files(robot, camera, poses, "files/camera_calibration")
-    
-    from ultralytics import YOLO
-    model = YOLO("yolov8n.pt")
-    model.train(data="data/in/yolo_dataset_pack/dataset.yaml", project="files/pack_training", name="experiment_1",
-                epochs=10, imgsz=640, iou=0.2)
-    # model = YOLO("/home/gu/Gubo-kit/files/pack_training/experiment_13/weights/best.pt") 
     imgs = ["square01", "square02", "square03", "trapezoid01", "trapezoid02", "trapezoid03"]
-    for img in imgs:
-        start = time.time()
-        result = model(os.path.join("/home/gu/fluently_ws/fluently_mem/data/i4.0_frames", img) + ".png")
-        result[0].show()
-        input(">>>")
+    pass
+    
+    
