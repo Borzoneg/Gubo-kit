@@ -140,7 +140,9 @@ def rotvec_to_T(rotvec: ndarray):
 def T_to_rotvec(T: sm.SE3):
     return np.hstack((T.t, sm.SO3(T.R).eulervec()))
 
-def vgg_to_yolo(csv_filepath, yolo_path):
+def vgg_to_yolo(csv_filepath, img_w, img_h):
+    dirpath = os.path.join(*csv_filepath.split("/")[:-1], "labels")
+    os.makedirs(dirpath, exist_ok=True)
     with open(csv_filepath, 'r') as f:
         reader = csv.reader(f)
         next(reader)  # Skip header
@@ -152,11 +154,12 @@ def vgg_to_yolo(csv_filepath, yolo_path):
             else:
                 label = 1
             x, y, w, h = json.loads((row[-2]))['x'], json.loads((row[-2]))['y'], json.loads((row[-2]))['width'], json.loads((row[-2]))['height']
-
+            w /= img_w
+            h /= img_h
             label_str = f"{label} {x} {y} {w} {h}"
-            with open(os.path.join(yolo_path, filename.replace("png", "txt")), "a") as f:
+            with open(os.path.join(dirpath, filename.replace("png", "txt")), "a") as f:
                 f.write(label_str + "\n") 
 
 if __name__ == "__main__":
-    #TODO: normalize coords
-    vgg_to_yolo("files/yolo_dataset_pack/train_mem.csv", "files/yolo_dataset_pack/labels/train")
+    #TODO:   normalize coords
+    vgg_to_yolo("files/yolo_dataset_pack/valid_mem.csv", 1280, 720)
