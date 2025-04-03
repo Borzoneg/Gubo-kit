@@ -136,7 +136,7 @@ def show_frames(title, frames):
         if  key != -1 or cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) < 1:
             break
 
-def collect_calibration_poses(robot, filename=None):
+def collect_calibration_poses(robot, camera, filename=None):
     robot.teachMode()
     calibration_poses = []
     while True:
@@ -182,9 +182,10 @@ def show_stream_and_save_frame(filepath, camera):
 
 def train_YOLO(test_imgs_path, model="yolov8n.pt", yaml_path="data/in/yolo_dataset_pack/dataset.yaml", savepath="files/yolo", 
                name="experiment", epochs=50, imgsz=640, iou=0.5):
-    """
+    """_summary_
+
     Args:
-        test_imgs_path (_type_): should be a list of path to images that we did not train with
+        test_imgs_path (_type_): should be a list of path to images we not trained with
         model (str, optional): _description_. Defaults to "yolov8n.pt".
         yaml_path (str, optional): _description_. Defaults to "data/in/yolo_dataset_pack/dataset.yaml".
         savepath (str, optional): _description_. Defaults to "files/yolo".
@@ -195,8 +196,8 @@ def train_YOLO(test_imgs_path, model="yolov8n.pt", yaml_path="data/in/yolo_datas
     """
     model = YOLO(model)
     model.train(data=yaml_path, project=savepath, name=name,
-                epochs=50, imgsz=640, iou=0.5)
-    # model = YOLO("/home/gu/Gubo-kit/files/pack_training/experiment_13/weights/best.pt") 
+                epochs=epochs, imgsz=imgsz, iou=iou)
+    # model = YOLO("/home/gu/Gubo-kit/files/yolo/experiment/weights/best.pt") 
     for img_path in test_imgs_path:
         result = model(img_path)
         result[0].show()
@@ -210,6 +211,8 @@ if __name__ == "__main__":
     # poses = np.load("files/camera_calibration/cal_poses.npy")
     # collect_calibration_files(robot, camera, poses, "files/camera_calibration")
     imgs = ["square01", "square02", "square03", "trapezoid01", "trapezoid02", "trapezoid03"]
-    pass
+    imgs_path = [(os.path.join("/home/gu/fluently_ws/fluently_mem/data/i4.0_frames", img) + ".png") for img in imgs]
+    train_YOLO(imgs_path)
+    
     
     
