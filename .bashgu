@@ -1,41 +1,35 @@
-#===================================================================================================#
-# This is my personal aliases and shortcut bash file with path that works on my machines.           #
-# I would suggest you copy and paste this to make one for youself and then you can source it in     #
-# /home/<your username>/.bashrc with "source <global path to this file>"                            #
-#                                                                                              -Gu  #
-#===================================================================================================#
-
 PS1="\[\033[01;32m\]\w$ \[\033[0m\]"
 export ISAACPATH="$HOME/.local/share/ov/pkg/isaac-sim-2023.1.1"
 export FLUENTLY_WS_PATH="$ISAACPATH/fluently_ws/ros/fluently"
-sdu="$HOME/SDU"
-thesis="$ISAACPATH/Enhancing-Robot-Performance-Through-HRC"
+export GUBOKIT="$HOME/Gubo-kit"
 
-alias gu_edit="code $FLUENTLY_WS_PATH/.bashgu"
-alias gu_py="python3 $FLUENTLY_WS_PATH/src/utils/utils/test.py"
+alias gu_edit="code $GUBOKIT/.bashgu"
+alias gu_py="python3 -i $GUBOKIT/gubokit/py_test_env.py"
 
 source "/opt/ros/humble/setup.bash"
+source "$GUBOKIT/ros_ws/install/setup.bash"
 source "$FLUENTLY_WS_PATH/../install/setup.bash"
 export ROS_LOCALHOST_ONLY=1
+
 # export PYTHONPATH="${PYTHONPATH}:$FLUENTLY_WS_PATH/../../hfc-thrift/src/main/python/src"
 export PYTHONPATH="${PYTHONPATH}:$HOME/fluently_ws/hfc-thrift/src/main/python/src"
-export PYTHONPATH="${PYTHONPATH}:$HOME/Gubo-kit"
+export PYTHONPATH="${PYTHONPATH}:$GUBOKIT"
 export QT_QPA_PLATFORM=xcb
 # export PYTHONPATH="${PYTHONPATH}:$FLUENTLY_WS_PATH/src/utils/utils"
 
 alias isaac="cd $ISAACPATH && ./isaac-sim.sh"
 
-alias build_pa="cd $FLUENTLY_WS_PATH/.. && colcon build --packages-select prima_additiva"
-alias prima_additiva_sim="cd $ISAACPATH && ./python.sh $FLUENTLY_WS_PATH/src/prima_additiva/prima_additiva/simulation.py"
-alias prima_additiva_supsi="cd $ISAACPATH && ./python.sh $FLUENTLY_WS_PATH/src/prima_additiva/prima_additiva/supsi_ws.py"
-alias prima_additiva_sim_ext="cd $ISAACPATH && ./python.sh $FLUENTLY_WS_PATH/src/prima_additiva/prima_additiva/simulation.py --/log/leve=error --/log/fileLogLeve=error --/log/outputStreamLevel=error"
-alias prima_additiva_tree="cd $FLUENTLY_WS_PATH/.. && ros2 run prima_additiva tree"
-alias prima_additiva_view_scan="cd $FLUENTLY_WS_PATH/.. && ros2 run prima_additiva scan_shower"
-alias prima_additiva_input="cd $FLUENTLY_WS_PATH/.. && ros2 run prima_additiva input_manager"
-alias prima_additiva_trust="ros2 topic pub /trust std_msgs/msg/Bool \"{data: True}\""
-alias prima_additiva_launch="cd $FLUENTLY_WS_PATH/.. && ros2 launch prima_additiva launch.py"
-alias prima_additiva_thrift="cd $FLUENTLY_WS_PATH/../../ && ./hfc-thrift/bin/startServer.sh -p 7070 fluently_ontology/fluently.yml"
-alias prima_additiva_rviz="cd $FLUENTLY_WS_PATH && ros2 run rviz2 rviz2 src/prima_additiva/configs/cloud_shower.rviz"
+# alias build_pa="cd $FLUENTLY_WS_PATH/.. && colcon build --packages-select prima_additiva"
+# alias prima_additiva_sim="cd $ISAACPATH && ./python.sh $FLUENTLY_WS_PATH/src/prima_additiva/prima_additiva/simulation.py"
+# alias prima_additiva_supsi="cd $ISAACPATH && ./python.sh $FLUENTLY_WS_PATH/src/prima_additiva/prima_additiva/supsi_ws.py"
+# alias prima_additiva_sim_ext="cd $ISAACPATH && ./python.sh $FLUENTLY_WS_PATH/src/prima_additiva/prima_additiva/simulation.py --/log/leve=error --/log/fileLogLeve=error --/log/outputStreamLevel=error"
+# alias prima_additiva_tree="cd $FLUENTLY_WS_PATH/.. && ros2 run prima_additiva tree"
+# alias prima_additiva_view_scan="cd $FLUENTLY_WS_PATH/.. && ros2 run prima_additiva scan_shower"
+# alias prima_additiva_input="cd $FLUENTLY_WS_PATH/.. && ros2 run prima_additiva input_manager"
+# alias prima_additiva_trust="ros2 topic pub /trust std_msgs/msg/Bool \"{data: True}\""
+# alias prima_additiva_launch="cd $FLUENTLY_WS_PATH/.. && ros2 launch prima_additiva launch.py"
+# alias prima_additiva_thrift="cd $FLUENTLY_WS_PATH/../../ && ./hfc-thrift/bin/startServer.sh -p 7070 fluently_ontology/fluently.yml"
+# alias prima_additiva_rviz="cd $FLUENTLY_WS_PATH && ros2 run rviz2 rviz2 src/prima_additiva/configs/cloud_shower.rviz"
 
 alias fluently_thrift="cd $HOME/fluently_ws && ./hfc-thrift/bin/startServer.sh -p 7070 fluently_ontology/fluently.yml"
 
@@ -50,9 +44,9 @@ lazy_git(){
      git push
      }
 
-prima_additiva_passive(){
-     prima_additiva_view_scan & prima_additiva_thrift && fg
-}
+# prima_additiva_passive(){
+#      prima_additiva_view_scan & prima_additiva_thrift && fg
+# }
 
 # ================================================ USEFUL COMMANDS ================================================ #
 # to build in windows colcon build --merge-install --packages-select pa_input_manager                               |
