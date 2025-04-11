@@ -33,6 +33,24 @@ alias isaac="cd $ISAACPATH && ./isaac-sim.sh"
 
 alias fluently_thrift="cd $HOME/fluently_ws && ./hfc-thrift/bin/startServer.sh -p 7070 fluently_ontology/fluently.yml"
 
+lazy_git_pull(){
+     echo "== knowledge-transfer-fleuntly =="
+     (cd $HOME/knowledge-transfer-fleuntly && git pull --no-stat)
+     echo -e "\n== Gubo-kit =="
+     (cd $HOME/Gubo-kit && git pull --no-stat)
+     echo -e "\n== fluently_mem =="
+     (cd $HOME/fluently_ws/fluently_mem && git pull --no-stat)
+}
+
+lazy_git_status(){
+     echo "== knowledge-transfer-fleuntly =="
+     (cd "$HOME/knowledge-transfer-fleuntly" && git status -sb)
+     echo -e "\n== Gubo-kit =="
+     (cd "$HOME/Gubo-kit" && git status -sb)
+     echo -e "\n== fluently_mem =="
+     (cd "$HOME/fluently_ws/fluently_mem" && git status -sb)
+}
+
 isaac_py(){
      cd $ISAACPATH
      ./python.sh $*
