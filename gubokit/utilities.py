@@ -148,11 +148,7 @@ def vgg_to_yolo(csv_filepath, img_w, img_h):
         next(reader)  # Skip header
         for row in reader:
             filename = str(row[0])
-            label = json.loads((row[-1]))['label']
-            if label == "tra00":
-                label = 0
-            else:
-                label = 1
+            label = json.loads((row[-1]))['model']
             x, y, w, h = json.loads((row[-2]))['x'], json.loads((row[-2]))['y'], json.loads((row[-2]))['width'], json.loads((row[-2]))['height']
             x = (x + w/2) / img_w
             y = (y + h/2) / img_h
@@ -163,4 +159,4 @@ def vgg_to_yolo(csv_filepath, img_w, img_h):
                 f.write(label_str + "\n") 
 
 if __name__ == "__main__":
-    vgg_to_yolo("data/in/yolo_dataset_pack/valid_mem.csv", img_w=1280, img_h=720)
+    vgg_to_yolo("data/in/yolo_dataset_cell/cells_annotations.csv", img_w=1280, img_h=720)

@@ -180,7 +180,7 @@ def show_stream_and_save_frame(filepath, camera):
         elif key == 't':
             cv2.imwrite(os.path.join(filepath), camera_frame)
 
-def train_YOLO(test_imgs_path, model="yolov8n.pt", yaml_path="data/in/yolo_dataset_pack/dataset.yaml", savepath="files/yolo", 
+def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="files/yolo", 
                name="experiment", epochs=50, imgsz=640, iou=0.5):
     """_summary_
 
@@ -211,8 +211,8 @@ if __name__ == "__main__":
     # poses = np.load("files/camera_calibration/cal_poses.npy")
     # collect_calibration_files(robot, camera, poses, "files/camera_calibration")
     imgs = ["square01", "square02", "square03", "trapezoid01", "trapezoid02", "trapezoid03"]
-    imgs_path = [(os.path.join("/home/gu/fluently_ws/fluently_mem/data/i4.0_frames", img) + ".png") for img in imgs]
-    train_YOLO(imgs_path)
+    imgs_path = ["data/in/yolo_dataset_cell/frame5.png"]
+    train_YOLO(yaml_path="data/in/yolo_dataset_cell/dataset.yaml", test_imgs_path=imgs_path)
     
     
     
