@@ -142,10 +142,11 @@ def collect_calibration_poses(robot, camera, filename=None):
     robot.teachMode()
     calibration_poses = []
     while True:
-        key = cv2.waitKey(1)
-        if key == 113:
+        key = chr(0xFF & cv2.waitKey(1))
+        if key == 'q':
             break
-        elif key == 13:
+        elif key == ' ':
+            print(f"Adding pose {len(calibration_poses)}")
             calibration_poses.append(rotvec_to_T(robot.getActualTCPPose()))
         camera_frame = camera.get_color_frame()
         cv2.imshow("frame", camera_frame)
@@ -206,15 +207,15 @@ def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="files/yo
         input(">>>")
 
 if __name__ == "__main__":
-    # robot = Robot("192.168.1.100")
-    # camera = RealSenseCamera(({'color': [1280, 720]}))
-    # print(robot.getActualTCPPose())
-    # poses = collect_calibration_poses(robot, "files/camera_calibration/cal_poses.npy")
-    # poses = np.load("files/camera_calibration/cal_poses.npy")
-    # collect_calibration_files(robot, camera, poses, "files/camera_calibration")
-    imgs = ["square01", "square02", "square03", "trapezoid01", "trapezoid02", "trapezoid03"]
-    imgs_path = ["data/in/yolo_dataset_cell/frame5.png"]
-    train_YOLO(yaml_path="data/in/yolo_dataset_cell/dataset.yaml", test_imgs_path=imgs_path)
+    robot = Robot("192.168.1.100")
+    camera = RealSenseCamera(({'color': [1280, 720]}))
+    poses = collect_calibration_poses(robot=robot, camera=camera, filename="files/camera_calibration/cal_poses.npy")
+    poses = np.load("files/camera_calibration/cal_poses.npy")
+    collect_calibration_files(robot, camera, poses, "files/camera_calibration")
+    
+    # imgs = ["square01", "square02", "square03", "trapezoid01", "trapezoid02", "trapezoid03"]
+    # imgs_path = ["data/in/yolo_dataset_cell/frame5.png"]
+    # train_YOLO(yaml_path="data/in/yolo_dataset_cell/dataset.yaml", test_imgs_path=imgs_path)
     
     
     
