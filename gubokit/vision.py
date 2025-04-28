@@ -101,10 +101,12 @@ class RealSenseCamera():
         frame = np.asanyarray(frame.get_data())
         return frame
 
-    def get_depth_frame(self):
+    def get_depth_frame(self, aligned='color'):
         frames = self.pipeline.wait_for_frames()
+        if aligned == 'color':
+            align = rs.align(rs.stream.color)
+            frames = align.process(frames)
         frame = frames.get_depth_frame()
-        frame = np.asanyarray(frame.get_data())
         return frame
     
     def find_max_res(self):
