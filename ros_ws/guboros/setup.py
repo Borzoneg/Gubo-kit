@@ -6,7 +6,7 @@ package_name = 'guboros'
 
 data_files=[(os.path.join('share', package_name), glob('launch/*.py')), # added for launch files
             (os.path.join('share', package_name, 'config'), glob('config/*')), # added for config files
-            (os.path.join('share', package_name, 'urdf', 'meshes', 'crx20ia_l', 'visual'), glob('urdf/meshes/crx20ia_l/visual/*.stl')),
+            (os.path.join('share', package_name, 'urdf', 'meshes', 'crx20ia_l', 'visual'), glob('urdf/meshes/crx20ia_l/visual/*.stl')), # left part is where the file is right is where we install it
             (os.path.join('share', package_name, 'urdf', 'meshes', 'crx20ia_l', 'collision'), glob('urdf/meshes/crx20ia_l/collision/*.stl')),
             (os.path.join('share', package_name, 'urdf', 'meshes', 'others', 'collision'), glob('urdf/meshes/others/collision/*.stl')),
             (os.path.join('share', package_name, 'urdf', 'meshes', 'others', 'visual'), glob('urdf/meshes/others/collision/*.stl')),
