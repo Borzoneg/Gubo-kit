@@ -184,3 +184,6 @@ class JointSubscriber(Node):
 
     def listener_callback(self, msg):
         self.get_logger().info('I heard: "%s"' % msg)
+
+if __name__ == "__main__":
+    clt = SendStrClient("test")
