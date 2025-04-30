@@ -10,7 +10,7 @@ import launch
 
 def generate_launch_description():
     # declare argument and get value from it
-    urdf_arg = DeclareLaunchArgument("urdf_path", default_value="/home/gu/Gubo-kit/urdf/pad_cell.urdf")
+    urdf_arg = DeclareLaunchArgument("urdf_path", default_value="/home/gu/Gubo-kit/ros_ws/guboros/urdf/pad_cell.urdf")
     rviz_arg = DeclareLaunchArgument("rviz_config_path", default_value="/home/gu/Gubo-kit/files/rviz_config/config.rviz")
     urdf_path = LaunchConfiguration("urdf_path")
     rviz_config_path = LaunchConfiguration("rviz_config_path")

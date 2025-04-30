@@ -146,14 +146,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/visual/base.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/visual/base.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="FANUC_Black"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/collision/base.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/collision/base.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
   </link>
@@ -161,14 +161,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 -0.11729999999999999"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/visual/j1.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/visual/j1.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="FANUC_White"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.11729999999999999"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/collision/j1.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/collision/j1.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
   </link>
@@ -176,14 +176,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="-0.0 0 0.0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/visual/j2.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/visual/j2.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="FANUC_White"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="-0.0 0 0.0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/collision/j2.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/collision/j2.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
   </link>
@@ -191,14 +191,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="-0.0 0 0.0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/visual/j3.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/visual/j3.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="FANUC_White"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="-0.0 0 0.0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/collision/j3.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/collision/j3.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
   </link>
@@ -206,14 +206,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0.54 0 0.0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/visual/j4.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/visual/j4.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="FANUC_White"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.54 0 0.0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/collision/j4.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/collision/j4.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
   </link>
@@ -221,14 +221,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0.0 -0.15 0.0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/visual/j5.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/visual/j5.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="FANUC_White"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.0 -0.15 0.0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/collision/j5.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/collision/j5.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
   </link>
@@ -236,14 +236,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0.15999999999999992 0.0 0.0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/visual/j6.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/visual/j6.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="FANUC_Black"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.15999999999999992 0.0 0.0"/>
       <geometry>
-        <mesh filename="./meshes/crx20ia_l/collision/j6.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://guboros/urdf/meshes/crx20ia_l/collision/j6.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
   </link>
@@ -370,7 +370,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="./meshes/table.stl"/>
+        <mesh filename="package://guboros/urdf/meshes/others/visual/table.stl"/>
       </geometry>
       <material name="grey_table">
         <color rgba="0.85 0.85 0.85 1"/>

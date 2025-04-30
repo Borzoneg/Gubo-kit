@@ -184,3 +184,11 @@ class JointSubscriber(Node):
 
     def listener_callback(self, msg):
         self.get_logger().info('I heard: "%s"' % msg)
+
+if __name__ == "__main__":
+    rclpy.init()
+    clt = SendStrClient("test")
+    clt.send_request("ASD")
+    # in another file:
+    # srv = ServicesPlaceholder(["test"])
+    # rclpy.spin(srv)

@@ -3,13 +3,15 @@ export ISAACPATH="$HOME/.local/share/ov/pkg/isaac-sim-2023.1.1"
 export FLUENTLY_WS_PATH="$ISAACPATH/fluently_ws/ros/fluently"
 export GUBOKIT="$HOME/Gubo-kit"
 
-alias gu_edit="code $GUBOKIT/.bashgu"
-alias gu_py="python3 -i $GUBOKIT/gubokit/py_test_env.py"
-
 source "/opt/ros/humble/setup.bash"
 source "$GUBOKIT/ros_ws/install/setup.bash"
-source "$FLUENTLY_WS_PATH/../install/setup.bash"
+# source "$FLUENTLY_WS_PATH/../install/setup.bash"
 export ROS_LOCALHOST_ONLY=1
+
+alias gu_edit="code $GUBOKIT/.bashgu"
+
+source ~/pyenv/bin/activate
+alias gu_py="python3 -i $GUBOKIT/gubokit/py_test_env.py"
 
 # export PYTHONPATH="${PYTHONPATH}:$FLUENTLY_WS_PATH/../../hfc-thrift/src/main/python/src"
 export PYTHONPATH="${PYTHONPATH}:$HOME/fluently_ws/hfc-thrift/src/main/python/src"
