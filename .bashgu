@@ -32,12 +32,14 @@ alias isaac="cd $ISAACPATH && ./isaac-sim.sh"
 # alias prima_additiva_rviz="cd $FLUENTLY_WS_PATH && ros2 run rviz2 rviz2 src/prima_additiva/configs/cloud_shower.rviz"
 
 alias fluently_thrift="cd $HOME/fluently_ws && ./hfc-thrift/bin/startServer.sh -p 7070 fluently_ontology/fluently.yml"
+
 git_paths=(
           "$HOME/knowledge-transfer-fleuntly"
           "$HOME/Gubo-kit"
           "$HOME/fluently_ws/fluently_mem"
           "$HOME/fluently_ws/ros/supsi-pa"
           )
+
 lazy_git_pull(){
      for dir in "${git_paths[@]}"; do
           echo "== $(basename "$dir") =="
