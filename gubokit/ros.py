@@ -103,12 +103,13 @@ class PoseArrayPublisher(Node):
     def __init__(self, topic_name: str):
         super().__init__('PoseArrayPublisher')
         self.publisher = self.create_publisher(PoseArray, topic_name, 10)
+        self.frame_id = frame_id
 
     def send_poses(self, Ts: list[sm.SE3]):
         msg = PoseArray()
         msg.header = Header()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = 'map'  # Set the frame ID as needed
+        msg.header.frame_id =  self.frame_id # Set the frame ID as needed
         for T in Ts:
             pose = Pose()
             pose.position.x = float(T.t[0])
