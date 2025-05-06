@@ -100,7 +100,7 @@ class PosePublisher(Node):
         # self.get_logger().info('Publishing: "%s"' % msg)
 
 class PoseArrayPublisher(Node):
-    def __init__(self, topic_name: str):
+    def __init__(self, topic_name: str, frame_id: str='world'):
         super().__init__('PoseArrayPublisher')
         self.publisher = self.create_publisher(PoseArray, topic_name, 10)
         self.frame_id = frame_id
