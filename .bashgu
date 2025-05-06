@@ -7,7 +7,6 @@ source "/opt/ros/humble/setup.bash"
 # source "$GUBOKIT/ros_ws/install/setup.bash"
 # export ROS_LOCALHOST_ONLY=1
 # export PYTHONPATH="${PYTHONPATH}:$GUBOKIT"
-export PYTHONPATH="${PYTHONPATH}:$FLUENTLY_WS_PATH/../../hfc-thrift/src/main/python/src"
 
 alias gu_edit="code $GUBOKIT/.bashgu"
 
@@ -40,6 +39,17 @@ git_paths=(
           "$HOME/fluently_ws/ros/supsi-pa"
           )
 
+
+isaac_py(){
+     cd $ISAACPATH
+     ./python.sh $*
+     }
+
+lazy_git(){
+     git add .
+     git commit -m "$*"
+     git push
+     }
 lazy_git_pull(){
      for dir in "${git_paths[@]}"; do
           echo "== $(basename "$dir") =="
@@ -53,17 +63,6 @@ lazy_git_status(){
           (cd $dir && git status -sb)
      done
 }
-
-isaac_py(){
-     cd $ISAACPATH
-     ./python.sh $*
-     }
-
-lazy_git(){
-     git add .
-     git commit -m "$*"
-     git push
-     }
 
 # prima_additiva_passive(){
 #      prima_additiva_view_scan & prima_additiva_thrift && fg
