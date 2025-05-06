@@ -4,9 +4,9 @@ export GUBOKIT="$HOME/Gubo-kit"
 
 source "/opt/ros/humble/setup.bash"
 
-source "$GUBOKIT/ros_ws/install/setup.bash"
-export ROS_LOCALHOST_ONLY=1
-export PYTHONPATH="${PYTHONPATH}:$GUBOKIT"
+# source "$GUBOKIT/ros_ws/install/setup.bash"
+# export ROS_LOCALHOST_ONLY=1
+# export PYTHONPATH="${PYTHONPATH}:$GUBOKIT"
 
 alias gu_edit="code $GUBOKIT/.bashgu"
 

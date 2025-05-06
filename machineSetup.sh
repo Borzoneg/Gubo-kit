@@ -30,7 +30,5 @@ sudo apt install ros-humble-joint_state_publisher_gui
 sudo apt install ros-humble-rviz2
 sudo apt install ros-humble-xacro
 sudo apt install libogre-1.12-dev
-pip install colcon-common-extensions catkin_pkg empy lark-parser rosdep rosdistro
-pip install pyrealsense2 roboticstoolbox-python pytrees numpy scipy matplotlib open3d opencv-python ultralytics 
-pip install ur_rtde
+pip install colcon-common-extensions catkin_pkg empy lark-parser rosdep rosdistro pyrealsense2 roboticstoolbox-python pytrees numpy scipy matplotlib open3d opencv-python ultralytics ur_rtde
 sudo apt-get install python3-tk
