@@ -32,23 +32,24 @@ alias isaac="cd $ISAACPATH && ./isaac-sim.sh"
 # alias prima_additiva_rviz="cd $FLUENTLY_WS_PATH && ros2 run rviz2 rviz2 src/prima_additiva/configs/cloud_shower.rviz"
 
 alias fluently_thrift="cd $HOME/fluently_ws && ./hfc-thrift/bin/startServer.sh -p 7070 fluently_ontology/fluently.yml"
-
+git_paths=(
+          "$HOME/knowledge-transfer-fleuntly"
+          "$HOME/Gubo-kit"
+          "$HOME/fluently_ws/fluently_mem"
+          "$HOME/fluently_ws/ros/supsi-pa"
+          )
 lazy_git_pull(){
-     echo "== knowledge-transfer-fleuntly =="
-     (cd $HOME/knowledge-transfer-fleuntly && git pull --no-stat)
-     echo -e "\n== Gubo-kit =="
-     (cd $HOME/Gubo-kit && git pull --no-stat)
-     echo -e "\n== fluently_mem =="
-     (cd $HOME/fluently_ws/fluently_mem && git pull --no-stat)
+     for dir in "${git_paths[@]}"; do
+          echo "== $(basename "$dir") =="
+          (cd $dir && git pull --no-stat)
+     done
 }
 
 lazy_git_status(){
-     echo "== knowledge-transfer-fleuntly =="
-     (cd "$HOME/knowledge-transfer-fleuntly" && git status -sb)
-     echo -e "\n== Gubo-kit =="
-     (cd "$HOME/Gubo-kit" && git status -sb)
-     echo -e "\n== fluently_mem =="
-     (cd "$HOME/fluently_ws/fluently_mem" && git status -sb)
+     for dir in "${git_paths[@]}"; do
+          echo "== $(basename "$dir") =="
+          (cd $dir && git status -sb)
+     done
 }
 
 isaac_py(){
