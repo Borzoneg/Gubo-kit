@@ -54,29 +54,4 @@ lazy_git_status(){
      done
 }
 
-# ================================================ USEFUL COMMANDS ================================================ #
-# to build in windows colcon build --merge-install --packages-select pa_input_manager                               |
-# Service call from terminal: ros2 service call /generate_poses custom_interfaces/srv/GetInt ["{data: 0}"]          |
-# Install new packages for python: ./python.sh -m pip install name_of_package_here                                  |
-#                                                                                                                   |
-#                                                 git good command                                                  |
-# git status                                                                                                        |
-# git checkout <name branch>                                                                                        |
-# git diff --name-only experiment                                                                                   |
-# git pull                                                                                                          |
-# git branch                                                                                                        |
-# git push origin --delete origin/revert-8c51726a                                                                   |
-# git stash                                                                                                         |
-# git checkout gu_branch                                                                                            |
-# git stash pop                                                                                                     |
-# git status                                                                                                        |
-# git add .                                                                                                         |
-# git commit -m "First commit"                                                                                      |
-# git push                                                                                                          |
-# git diff --name-only main                                                                                         |
-# git diff main src/prima_additiva/prima_additiva/simulation.py                                                     |
-# git merge main                                                                                                    |
-# git checkout supsi --patch src/prima_additiva/prima_additiva/simulation                                           |
-# git branch -d supsi                                                                                               |
-# git push -d origin NAMEBRANCH              to delete a branch in remote                                           |
-# ================================================================================================================= #
+
