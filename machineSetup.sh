@@ -1,10 +1,11 @@
 sudo apt install terminator
 sudo apt install git
 ssh-keygen
+read -p "Press enter when you activate the ssh key in github and gitlab" 
 git clone git@gitlab.sdu.dk:gubo/fluently_mem.git
 git clone git@github.com:Borzoneg/Gubo-kit.git
 git clone git@github.com:Borzoneg/knowledge-transfer-fleuntly.git
-echo "source $HOME/Gubo-kit/.bashgu" >> filename.txt
+echo "source $HOME/Gubo-kit/.bashgu" >> $HOME/.bashrc
 
 sudo apt install python3.10-venv
 python3 -m venv pyenv
@@ -22,7 +23,7 @@ sudo apt update
 sudo apt upgrade
 sudo apt install ros-humble-desktop python3-colcon-common-extensions # ros-dev-tools
 source /opt/ros/humble/setup.bash
-ls
+
 cd Gubo-kit/ros_ws
 colcon build
 
@@ -32,3 +33,5 @@ sudo apt install ros-humble-xacro
 sudo apt install libogre-1.12-dev
 pip install colcon-common-extensions catkin_pkg empy lark-parser rosdep rosdistro pyrealsense2 roboticstoolbox-python pytrees numpy scipy matplotlib open3d opencv-python ultralytics ur_rtde
 sudo apt-get install python3-tk
+
+source $HOME/Gubokit/.bashgu
