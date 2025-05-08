@@ -47,10 +47,9 @@ def clean_data_repo(directory_path):
         Args:
             directory_path (string): directory path
         """
-        path = os.environ['FLUENTLY_WS_PATH'] + "/data/" + directory_path
-        path_list = sorted(os.listdir(path))
+        path_list = sorted(os.listdir(directory_path))
         for file_name in path_list:
-            os.remove(path + file_name)
+            os.remove(directory_path + file_name)
 
 class PoseSubscriber():
     """Subscribe to a ros2 node and create a pose in isaac when a pose is published on the topic
