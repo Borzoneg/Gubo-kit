@@ -40,22 +40,22 @@
   <!-- Link 2 -->
   <link name="link2">
     <visual>
-      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <origin xyz="0 0 0.065" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="0.03" radius="0.005"/>
+        <mesh filename="package://finger_pkg/urdf/meshes/finger/visual/Joint.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="green">
         <color rgba="0 1 0 1"/>
       </material>
     </visual>
     <collision>
-      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <origin xyz="0 0 0.065" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="0.03" radius="0.005"/>
+        <mesh filename="package://finger_pkg/urdf/meshes/finger/visual/Joint.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
     <inertial>
-      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <origin xyz="0 0 0.065" rpy="0 0 0"/>
       <mass value="0.1"/>
       <inertia 
         ixx="1e-5" ixy="0.0" ixz="0.0"
