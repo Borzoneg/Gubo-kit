@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<robot name="two_segment_arm">
+
+  <!-- Link 1 -->
+  <link name="link1">
+    <visual>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.03" radius="0.005"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.03" radius="0.005"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <mass value="0.1"/>
+      <inertia 
+        ixx="1e-5" ixy="0.0" ixz="0.0"
+        iyy="1e-5" iyz="0.0"
+        izz="1e-5"/>
+    </inertial>
+  </link>
+
+  <!-- Joint 1: Base to Link 1 -->
+  <joint name="joint1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.14" upper="3.14" effort="1.0" velocity="1.0"/>
+  </joint>
+
+  <!-- Link 2 -->
+  <link name="link2">
+    <visual>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.03" radius="0.005"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.03" radius="0.005"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0.015" rpy="0 0 0"/>
+      <mass value="0.1"/>
+      <inertia 
+        ixx="1e-5" ixy="0.0" ixz="0.0"
+        iyy="1e-5" iyz="0.0"
+        izz="1e-5"/>
+    </inertial>
+  </link>
+
+  <!-- Joint 2: Link 1 to Link 2 -->
+  <joint name="joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0 0 0.03" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-3.14" upper="3.14" effort="1.0" velocity="1.0"/>
+  </joint>
+
+  <!-- Base link (invisible, static) -->
+  <link name="base_link"/>
+
+</robot>
