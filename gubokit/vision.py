@@ -10,6 +10,8 @@ import time
 import yaml
 from numpy import ndarray
 from ultralytics import YOLO
+import re
+import cv2.aruco as aruco
 
 class RealSenseCamera():
     def __init__(self, extrinsic: sm.SE3, enabled_strams={'color': [1280, 720], 'depth': [640, 480], 'infrared': [640, 480]}):
@@ -171,6 +173,88 @@ def collect_calibration_files(robot, camera, poses, dirpath="."):
             camera_frame = camera.get_color_frame()
             cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.jpg"), camera_frame)
 
+def calibrate_camera(dirpath):
+    # poses
+    poses = []
+    with open(os.path.join(dirpath, "poses.csv")) as f:
+        reader = csv.reader(f)
+        for row in reader:
+            poses.append(np.array(row))
+
+    # intrinsic
+    with open(os.path.join(dirpath, "intrinsic.yaml"), "r") as f:
+        data = yaml.safe_load(f)
+    camera_matrix = np.array([[data['fx'],          0, data['ppx']],
+                              [0,          data['fy'], data['ppy']],
+                              [0,                   0,          1]])
+    dist_coeffs = data['distortion_coefficients']
+        
+    aruco_dict_lst = [
+                     aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL),
+                     aruco.getPredefinedDictionary(aruco.DICT_APRILTAG_16h5),
+                     aruco.getPredefinedDictionary(aruco.DICT_APRILTAG_25H9),
+                     aruco.getPredefinedDictionary(aruco.DICT_APRILTAG_36h10),
+                     aruco.getPredefinedDictionary(aruco.DICT_APRILTAG_36h11),
+                     aruco.getPredefinedDictionary(aruco.DICT_ARUCO_MIP_36h12),
+                     aruco.getPredefinedDictionary(aruco.DICT_4X4_50),
+                     aruco.getPredefinedDictionary(aruco.DICT_5X5_50),
+                     aruco.getPredefinedDictionary(aruco.DICT_6X6_50),
+                     aruco.getPredefinedDictionary(aruco.DICT_7X7_50),
+                     aruco.getPredefinedDictionary(aruco.DICT_7X7_100),
+                     ]
+                                                   
+    for aruco_dict in aruco_dict_lst:
+        try:    
+            board = aruco.GridBoard(size=(7, 5), markerLength=0.04, markerSeparation=0.01, dictionary=aruco_dict)
+            board_image = board.generateImage((1000, 1000), None, 0, 1)
+            cv2.imshow('charuco', board_image)
+            cv2.waitKey(0)
+        except:
+            print("no")
+            pass
+    quit()
+    file_lst = sorted(os.listdir(os.path.join(dirpath, "photos")), key= lambda fname: int(re.search(r'\d+', fname).group()))
+    R_gripper2base = []
+    t_gripper2base = []
+    R_target2cam = []
+    t_target2cam = []
+
+    for i, f in enumerate(file_lst):
+        img = cv2.imread(os.path.join(dirpath, "photos", f))
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        corners, ids, _ = aruco.detectMarkers(gray, aruco_dict)
+
+        if ids is not None:
+
+            retval, rvec, tvec = aruco.estimatePoseBoard(
+                corners, ids, board, camera_matrix, dist_coeffs, None, None
+            )
+            if retval > 0:
+                # Draw detected board
+                aruco.drawAxis(img, camera_matrix, dist_coeffs, rvec, tvec, 0.1)
+                cv2.imshow("Detected", img)
+                cv2.waitKey(50)
+
+                # Convert to rotation matrix
+                R_cam, _ = cv2.Rodrigues(rvec)
+                t_cam = tvec.reshape(3)
+
+                # Store board pose relative to camera
+                R_target2cam.append(R_cam)
+                t_target2cam.append(t_cam)
+
+                # Store gripper (TCP) pose relative to base
+                T = poses[i]
+                R_gripper2base.append(T[:3, :3])
+                t_gripper2base.append(T[:3, 3])
+        else:
+            print(f"Board not detected in {f}")
+    else:
+        print(f"No markers detected in {f}")
+
+        
+
 def show_stream_and_save_frame(filepath, camera):
     while True:
         camera_frame = camera.get_color_frame()
@@ -209,11 +293,6 @@ def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/
 if __name__ == "__main__":
     # robot = Robot("192.168.1.100")
     # camera = RealSenseCamera(({'color': [1280, 720]}))
-    # poses = collect_calibration_poses(robot=robot, camera=camera, filename="files/camera_calibration/cal_poses.npy")
-    # poses = np.load("files/camera_calibration/cal_poses.npy")
-    # collect_calibration_files(robot, camera, poses, "files/camera_calibration")
-    
-    train_YOLO(yaml_path="data/in/yolo_dataset_cell/dataset.yaml", test_imgs_path=["data/in/yolo_dataset_cell/frame5.png"])
-    
+    calibrate_camera("files/camera_calibration")
     
     
