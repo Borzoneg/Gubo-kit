@@ -187,73 +187,53 @@ def calibrate_camera(dirpath):
     camera_matrix = np.array([[data['fx'],          0, data['ppx']],
                               [0,          data['fy'], data['ppy']],
                               [0,                   0,          1]])
-    dist_coeffs = data['distortion_coefficients']
+    dist_coeffs = np.array(data['distortion_coefficients'])
         
-    aruco_dict_lst = [
-                     aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL),
-                     aruco.getPredefinedDictionary(aruco.DICT_APRILTAG_16h5),
-                     aruco.getPredefinedDictionary(aruco.DICT_APRILTAG_25H9),
-                     aruco.getPredefinedDictionary(aruco.DICT_APRILTAG_36h10),
-                     aruco.getPredefinedDictionary(aruco.DICT_APRILTAG_36h11),
-                     aruco.getPredefinedDictionary(aruco.DICT_ARUCO_MIP_36h12),
-                     aruco.getPredefinedDictionary(aruco.DICT_4X4_50),
-                     aruco.getPredefinedDictionary(aruco.DICT_5X5_50),
-                     aruco.getPredefinedDictionary(aruco.DICT_6X6_50),
-                     aruco.getPredefinedDictionary(aruco.DICT_7X7_50),
-                     aruco.getPredefinedDictionary(aruco.DICT_7X7_100),
-                     ]
-                                                   
-    for aruco_dict in aruco_dict_lst:
-        try:    
-            board = aruco.GridBoard(size=(7, 5), markerLength=0.04, markerSeparation=0.01, dictionary=aruco_dict)
-            board_image = board.generateImage((1000, 1000), None, 0, 1)
-            cv2.imshow('charuco', board_image)
-            cv2.waitKey(0)
-        except:
-            print("no")
-            pass
-    quit()
+    # detection
+    aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_1000)
+    board = aruco.GridBoard(size=(9, 14), markerLength=0.02, markerSeparation=0.003, dictionary=aruco_dict)
     file_lst = sorted(os.listdir(os.path.join(dirpath, "photos")), key= lambda fname: int(re.search(r'\d+', fname).group()))
-    R_gripper2base = []
-    t_gripper2base = []
-    R_target2cam = []
-    t_target2cam = []
-
+    
+    detectorParams = cv2.aruco.DetectorParameters()
+    detector = cv2.aruco.ArucoDetector(aruco_dict, detectorParams)    
+    all_corners = []
+    all_ids = []
+    counter = []
+    used_poses = []
     for i, f in enumerate(file_lst):
         img = cv2.imread(os.path.join(dirpath, "photos", f))
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        undistorted_img = cv2.undistort(img, camera_matrix, dist_coeffs)
+        gray = cv2.cvtColor(undistorted_img, cv2.COLOR_BGR2GRAY)
+        corners, ids, rejected_candidates = detector.detectMarkers(gray)
+        if ids is not None and len(ids) != (board.getGridSize()[0]*board.getGridSize()[1]/2):
+            all_corners.extend(np.array([np.array(c[0]) for c in corners]))
+            all_ids.extend(np.array([id[0] for id in ids]))
+            counter.append(len(ids))
+            # cv2.imshow("gray", gray)
+            # cv2.waitKey(0)
+            for corner, id in zip(corners, ids):
+                br, bl, tl, tr = corner[0]
+                centre = np.mean([br, bl, tl, tr], axis=0).astype(int)
+                noted = cv2.putText(gray, f"{id}", centre, cv2.FONT_HERSHEY_SIMPLEX, fontScale=.4, color=(0, 0, 255), thickness=2)
+                for point in [br, bl, tl, tr]:
+                    noted = cv2.circle(noted, point.astype(int), radius=2, color=(0, 0, 255))
+            used_poses.append(poses[i])
+            # cv2.imshow("noted", noted)
+            # cv2.waitKey(0)
 
-        corners, ids, _ = aruco.detectMarkers(gray, aruco_dict)
-
-        if ids is not None:
-
-            retval, rvec, tvec = aruco.estimatePoseBoard(
-                corners, ids, board, camera_matrix, dist_coeffs, None, None
-            )
-            if retval > 0:
-                # Draw detected board
-                aruco.drawAxis(img, camera_matrix, dist_coeffs, rvec, tvec, 0.1)
-                cv2.imshow("Detected", img)
-                cv2.waitKey(50)
-
-                # Convert to rotation matrix
-                R_cam, _ = cv2.Rodrigues(rvec)
-                t_cam = tvec.reshape(3)
-
-                # Store board pose relative to camera
-                R_target2cam.append(R_cam)
-                t_target2cam.append(t_cam)
-
-                # Store gripper (TCP) pose relative to base
-                T = poses[i]
-                R_gripper2base.append(T[:3, :3])
-                t_gripper2base.append(T[:3, 3])
-        else:
-            print(f"Board not detected in {f}")
-    else:
-        print(f"No markers detected in {f}")
-
-        
+    all_corners = np.array(all_corners)
+    all_ids = np.array(all_ids)
+    counter = np.array(counter) 
+    ret, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.aruco.calibrateCameraAruco(
+                                        corners=all_corners,
+                                        ids=all_ids,
+                                        counter=counter,
+                                        board=board,
+                                        imageSize=(img.shape[1], img.shape[0]),
+                                        cameraMatrix=None,
+                                        distCoeffs=None
+                                    )
+    print(ret, rvecs, tvecs)
 
 def show_stream_and_save_frame(filepath, camera):
     while True:
