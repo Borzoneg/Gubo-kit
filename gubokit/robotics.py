@@ -371,6 +371,18 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         self.close_gripper()
         self.move_up(0.2, speed=0.25)
         
+    def grab_object_contact(self, obj_pose: ndarray):
+        """Grab an object by going over the pose and then moving down until contact 
+
+        Args:
+            obj_pose (ndarray): pose of the object
+        """
+        self.open_gripper()
+        self.moveL(np.add(obj_pose, np.array([0, 0, 0.1, 0, 0, 0])), 0.1, 0.3)
+        self.moveUntilContact([0, 0, -0.100, 0, 0, 0])
+        self.close_gripper()
+        self.move_up(0.2, speed=0.25)
+
     def hold_object(self, obj_pose: ndarray, hold_pose: ndarray):
         """Grab an object and then hold it over a hold pose
 
@@ -426,6 +438,20 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         if isinstance(place_pose, sm.SE3):
             place_pose_cp = T_to_rotvec(place_pose)
         self.grab_object(pick_pose_cp)
+        self.moveL(np.add(place_pose_cp, np.array([0, 0, 0.15, 0, 0, 0])), 0.1, 0.3)
+        self.moveL(place_pose_cp, 0.1, 0.3)
+        self.open_gripper()
+        self.moveL(np.add(place_pose_cp, np.array([0, 0, 0.15, 0, 0, 0])), 0.1, 0.3)
+    
+    def pick_and_place_contact(self, pick_pose: ndarray, place_pose: ndarray):
+        """pick an object by moving over it and then move down until contact and place it somewhere"""
+        pick_pose_cp = copy.deepcopy(pick_pose)
+        place_pose_cp = copy.deepcopy(place_pose)
+        if isinstance(pick_pose, sm.SE3):
+            pick_pose_cp = T_to_rotvec(pick_pose)
+        if isinstance(place_pose, sm.SE3):
+            place_pose_cp = T_to_rotvec(place_pose)
+        self.grab_object_contact(pick_pose_cp)
         self.moveL(np.add(place_pose_cp, np.array([0, 0, 0.15, 0, 0, 0])), 0.1, 0.3)
         self.moveL(place_pose_cp, 0.1, 0.3)
         self.open_gripper()
