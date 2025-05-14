@@ -218,22 +218,23 @@ def calibrate_camera(dirpath):
                 for point in [br, bl, tl, tr]:
                     noted = cv2.circle(noted, point.astype(int), radius=2, color=(0, 0, 255))
             used_poses.append(poses[i])
-            # cv2.imshow("noted", noted)
-            # cv2.waitKey(0)
-
+            cv2.imshow("noted", noted)
+            cv2.waitKey(0)
+    # calibration
+    print(len(counter))
     all_corners = np.array(all_corners)
     all_ids = np.array(all_ids)
-    counter = np.array(counter) 
+    counter = np.array(counter)
     ret, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.aruco.calibrateCameraAruco(
-                                        corners=all_corners,
-                                        ids=all_ids,
-                                        counter=counter,
-                                        board=board,
-                                        imageSize=(img.shape[1], img.shape[0]),
-                                        cameraMatrix=None,
-                                        distCoeffs=None
-                                    )
-    print(ret, rvecs, tvecs)
+                                                                                    corners=all_corners,
+                                                                                    ids=all_ids,
+                                                                                    counter=counter,
+                                                                                    board=board,
+                                                                                    imageSize=(img.shape[1], img.shape[0]),
+                                                                                    cameraMatrix=None,
+                                                                                    distCoeffs=None
+                                                                                )
+    print(ret)
 
 def show_stream_and_save_frame(filepath, camera):
     while True:
