@@ -190,8 +190,8 @@ def calibrate_camera(dirpath):
     dist_coeffs = np.array(data['distortion_coefficients'])
         
     # detection
-    aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_1000)
-    board = aruco.GridBoard(size=(9, 14), markerLength=0.02, markerSeparation=0.003, dictionary=aruco_dict)
+    aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
+    board = aruco.GridBoard(size=(9, 14), markerLength=0.02-0.003, markerSeparation=0.003, dictionary=aruco_dict)
     file_lst = sorted(os.listdir(os.path.join(dirpath, "photos")), key= lambda fname: int(re.search(r'\d+', fname).group()))
     
     detectorParams = cv2.aruco.DetectorParameters()
@@ -205,21 +205,26 @@ def calibrate_camera(dirpath):
         undistorted_img = cv2.undistort(img, camera_matrix, dist_coeffs)
         gray = cv2.cvtColor(undistorted_img, cv2.COLOR_BGR2GRAY)
         corners, ids, rejected_candidates = detector.detectMarkers(gray)
-        if ids is not None and len(ids) != (board.getGridSize()[0]*board.getGridSize()[1]/2):
-            all_corners.extend(np.array([np.array(c[0]) for c in corners]))
-            all_ids.extend(np.array([id[0] for id in ids]))
-            counter.append(len(ids))
-            # cv2.imshow("gray", gray)
-            # cv2.waitKey(0)
+        # cv2.imshow("gray", gray)
+        # cv2.waitKey(0)
+        if ids is not None: # if we have markers we draw them for debug purpose
             for corner, id in zip(corners, ids):
                 br, bl, tl, tr = corner[0]
                 centre = np.mean([br, bl, tl, tr], axis=0).astype(int)
                 noted = cv2.putText(gray, f"{id}", centre, cv2.FONT_HERSHEY_SIMPLEX, fontScale=.4, color=(0, 0, 255), thickness=2)
                 for point in [br, bl, tl, tr]:
                     noted = cv2.circle(noted, point.astype(int), radius=2, color=(0, 0, 255))
-            used_poses.append(poses[i])
-            cv2.imshow("noted", noted)
-            cv2.waitKey(0)
+            if len(ids) == (board.getGridSize()[0]*board.getGridSize()[1]/2): # if it's the correct number of markers we add them to the list
+                all_corners.extend(np.array([np.array(c[0]) for c in corners]))
+                all_ids.extend(np.array([id[0] for id in ids]))
+                counter.append(len(ids))
+                used_poses.append(poses[i])
+                # cv2.imshow("added", noted)
+            else:
+                print(f"{f} did not have the right amount of marker in")
+                # cv2.imshow("rejected", noted)
+            # cv2.waitKey(0)
+
     # calibration
     print(len(counter))
     all_corners = np.array(all_corners)
