@@ -64,6 +64,10 @@ class RealSenseCamera():
         # extrinsic of the camera
         self.extrinsic = extrinsic
 
+        # Set the exposure time default = 166
+        sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1]
+        sensor.set_option(rs.option.exposure, 140)
+
     def video_stream(self, frame_type=['color']):
         while True:
             depth_frame, color_frame, ir_frame_1 = None, None, None
@@ -140,7 +144,7 @@ def show_frames(title, frames):
         if  key != -1 or cv2.getWindowProperty(title, cv2.WND_PROP_VISIBLE) < 1:
             break
 
-def collect_calibration_poses(robot, camera, filename=None):
+def collect_calibration_poses(robot, camera, filename="poses.npy"):
     robot.teachMode()
     calibration_poses = []
     while True:
@@ -168,10 +172,11 @@ def collect_calibration_files(robot, camera, poses, dirpath="."):
         writer = csv.writer(f)
         for i, pose in enumerate(poses):
             robot.move_to_cart_pose(pose)
+            print(f"Reeached pose {i}")
             time.sleep(3)
             writer.writerow(robot.getActualTCPPose())   
             camera_frame = camera.get_color_frame()
-            cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.jpg"), camera_frame)
+            cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.png"), camera_frame)
 
 def calibrate_camera(dirpath):
     # poses
@@ -211,19 +216,19 @@ def calibrate_camera(dirpath):
             for corner, id in zip(corners, ids):
                 br, bl, tl, tr = corner[0]
                 centre = np.mean([br, bl, tl, tr], axis=0).astype(int)
-                noted = cv2.putText(gray, f"{id}", centre, cv2.FONT_HERSHEY_SIMPLEX, fontScale=.4, color=(0, 0, 255), thickness=2)
+                noted = cv2.putText(gray, f"{id}", centre, cv2.FONT_HERSHEY_SIMPLEX, fontScale=.4, color=(255, 255, 255), thickness=2)
                 for point in [br, bl, tl, tr]:
-                    noted = cv2.circle(noted, point.astype(int), radius=2, color=(0, 0, 255))
+                    noted = cv2.circle(noted, point.astype(int), radius=2, color=(255, 255, 255))
             if len(ids) == (board.getGridSize()[0]*board.getGridSize()[1]/2): # if it's the correct number of markers we add them to the list
                 all_corners.extend(np.array([np.array(c[0]) for c in corners]))
                 all_ids.extend(np.array([id[0] for id in ids]))
                 counter.append(len(ids))
                 used_poses.append(poses[i])
-                # cv2.imshow("added", noted)
+                cv2.imshow("added", noted)
             else:
                 print(f"{f} did not have the right amount of marker in")
-                # cv2.imshow("rejected", noted)
-            # cv2.waitKey(0)
+                cv2.imshow("rejected", noted)
+            cv2.waitKey(0)
 
     # calibration
     print(len(counter))
@@ -277,8 +282,9 @@ def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/
         input(">>>")
 
 if __name__ == "__main__":
-    # robot = Robot("192.168.1.100")
-    # camera = RealSenseCamera(({'color': [1280, 720]}))
-    calibrate_camera("files/camera_calibration")
-    
-    
+    robot = Robot("192.168.1.100")
+    camera = RealSenseCamera(({'color': [1280, 720]}))
+    calibrate_camera("files/cam_cal")
+    # collect_calibration_poses(robot, camera)
+    # poses = np.load("files/poses.npy")
+    # collect_calibration_files(robot, camera, poses, "files/cam_cal")
