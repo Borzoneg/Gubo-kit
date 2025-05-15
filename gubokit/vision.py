@@ -14,7 +14,7 @@ import re
 import cv2.aruco as aruco
 
 class RealSenseCamera():
-    def __init__(self, extrinsic: sm.SE3, enabled_strams={'color': [1280, 720], 'depth': [640, 480], 'infrared': [640, 480]}):
+    def __init__(self, extrinsic: sm.SE3, enabled_strams={'color': [1920, 1080], 'depth': [640, 480], 'infrared': [640, 480]}):
         devices = rs.context().query_devices()
         if len(devices) == 0:
             raise RuntimeError("No Intel RealSense devices found!")
@@ -65,8 +65,8 @@ class RealSenseCamera():
         self.extrinsic = extrinsic
 
         # Set the exposure time default = 166
-        sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1]
-        sensor.set_option(rs.option.exposure, 140)
+        # sensor = self.pipeline.get_active_profile().get_device().query_sensors()[1]
+        # sensor.set_option(rs.option.exposure, 155)
 
     def video_stream(self, frame_type=['color']):
         while True:
@@ -176,7 +176,7 @@ def collect_calibration_files(robot, camera, poses, dirpath="."):
             time.sleep(3)
             writer.writerow(robot.getActualTCPPose())   
             camera_frame = camera.get_color_frame()
-            cv2.imwrite(os.path.join(photos_dir, f"photo_{i:03d}.png"), camera_frame)
+            cv2.imwrite(os.path.join(photos_dir, f"{i:03d}.png"), camera_frame)
 
 def calibrate_camera(dirpath):
     # poses
@@ -258,7 +258,7 @@ def show_stream_and_save_frame(filepath, camera):
         elif key == 't':
             cv2.imwrite(os.path.join(filepath), camera_frame)
 
-def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/yolo", 
+def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/yolo_runs", 
                name="experiment", epochs=50, imgsz=640, iou=0.5):
     """_summary_
 
@@ -283,8 +283,4 @@ def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/
 
 if __name__ == "__main__":
     robot = Robot("192.168.1.100")
-    camera = RealSenseCamera(({'color': [1280, 720]}))
-    calibrate_camera("files/cam_cal")
-    # collect_calibration_poses(robot, camera)
-    # poses = np.load("files/poses.npy")
-    # collect_calibration_files(robot, camera, poses, "files/cam_cal")
+    camera = RealSenseCamera(({'color': [1920, 1080]}))
