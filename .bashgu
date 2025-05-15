@@ -21,6 +21,7 @@ export PYTHONPATH="${PYTHONPATH}:$HOME/fluently_ws/hfc-thrift/src/main/python/sr
 export QT_QPA_PLATFORM=xcb
 
 alias isaac="cd $ISAACPATH && ./isaac-sim.sh"
+alias blender="cd $HOME/blender-4.4.3-linux-x64 && ./blender"
 
 alias fluently_thrift="cd $HOME/fluently_ws && ./hfc-thrift/bin/startServer.sh -p 7070 fluently_ontology/fluently.yml"
 
