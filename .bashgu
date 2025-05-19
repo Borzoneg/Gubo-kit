@@ -54,14 +54,18 @@ lazy_git(){
      }
 lazy_git_pull(){
      for dir in "${git_paths[@]}"; do
-          echo "== $(basename "$dir") =="
-          (cd $dir && git pull --no-stat)
+          if [ -d "$dir" ]; then 
+               echo "== $(basename "$dir") =="
+               (cd $dir && git pull --no-stat)
+          fi
      done
 }
 lazy_git_status(){
      for dir in "${git_paths[@]}"; do
-          echo "== $(basename "$dir") =="
-          (cd $dir && git status -sb)
+          if [ -d "$dir" ]; then 
+               echo "== $(basename "$dir") =="
+               (cd $dir && git status -sb)
+          fi
      done
 }
 
