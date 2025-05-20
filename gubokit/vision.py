@@ -258,8 +258,7 @@ def show_stream_and_save_frame(filepath, camera):
         elif key == 't':
             cv2.imwrite(os.path.join(filepath), camera_frame)
 
-def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/yolo_runs", 
-               name="experiment", epochs=50, imgsz=640, iou=0.5):
+def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/yolo_runs", name="experiment", epochs=50, imgsz=640, iou=0.5):
     """_summary_
 
     Args:
