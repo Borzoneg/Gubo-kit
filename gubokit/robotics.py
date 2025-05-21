@@ -365,6 +365,8 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         Args:
             obj_pose (ndarray): pose of the object
         """
+        if isinstance(obj_pose, sm.SE3):
+            obj_pose = T_to_rotvec(obj_pose)
         self.open_gripper()
         self.moveL(np.add(obj_pose, np.array([0, 0, 0.1, 0, 0, 0])), 0.1, 0.3)
         self.moveL(obj_pose, 0.15, 0.3)
@@ -377,6 +379,8 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         Args:
             obj_pose (ndarray): pose of the object
         """
+        if isinstance(obj_pose, sm.SE3):
+            obj_pose = T_to_rotvec(obj_pose)
         self.open_gripper()
         self.moveL(np.add(obj_pose, np.array([0, 0, 0.1, 0, 0, 0])), 0.1, 0.3)
         self.moveUntilContact([0, 0, -0.100, 0, 0, 0])
