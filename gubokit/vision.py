@@ -135,6 +135,21 @@ def frame_pos_to_3dpos(frame_pos: ndarray, camera: RealSenseCamera, Z: float):
     Y = ((frame_pos[1] - camera.optical_centre_y) * Z) / camera.fy
     return np.array([X, Y, Z])
 
+def frame_pos_to_pose(self, frame_pos:ndarray, camera, Z, base_T_TCP) -> sm.SE3:
+        """convert a position in the frame into a 4x4 pose in world frame
+
+        Args:
+            frame_pos (ndarray): position in the frame
+
+        Returns:
+            sm.SE3(sm.SE3): 4x4 pose in world frame
+        """
+        P = self.frame_pos_to_3dpos(frame_pos=frame_pos, camera=camera, Z=Z)
+        base_T_cam = base_T_TCP * camera.extrinsic
+        tmp = base_T_cam * sm.SE3(P)
+        T = sm.SE3.Rt(sm.SO3(base_T_TCP.R), tmp.t) # keep the current orientation of the tcp
+        return T
+
 def show_frames(title, frames):
     for i, frame in enumerate(frames):
         t = title + f"_{i:02d}" if i > 0 else title
