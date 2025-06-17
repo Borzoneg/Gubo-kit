@@ -14,32 +14,38 @@ class CustomLogger(logging.Logger):
     """
     Custom class expanding the logger from python library
     """
-    def __init__(self, name, filename, level=logging.NOTSET, overwrite=False): 
+    def __init__(self, name, filename=None, console_level="warning", file_level="info", overwrite=True): 
         
-        super().__init__(name, level)
+        super().__init__(name)
         self.filename = filename
         
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.WARNING)
+        self.console_handler = logging.StreamHandler()
+        
+        levels = {'warning': logging.WARNING, 'error': logging.ERROR, 'info': logging.INFO}
+        self.console_handler.setLevel(level=levels[console_level])
 
         # Create file handler and set level to DEBUG
         if os.path.exists(self.filename):
             if os.path.getsize(self.filename) > 100e3: # the size is in B
                 os.remove(self.filename)
         mode = 'a' if not overwrite else 'w' # mode a: append at the end of the file, w: write new file
-        file_handler = logging.FileHandler(self.filename, mode=mode, encoding='utf-8')
-        file_handler.setLevel(logging.INFO)
+        if filename is not None:
+            file_handler = logging.FileHandler(self.filename, mode=mode, encoding='utf-8')
+            file_handler.setLevel(level=levels[file_level])
 
-        # Create formatter and add it to the handlers
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        console_handler.setFormatter(formatter)
-        file_handler.setFormatter(formatter)
+            # Create formatter and add it to the handlers
+            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            self.console_handler.setFormatter(formatter)
+            file_handler.setFormatter(formatter)
 
-        # Add the handlers to the logger
-        self.addHandler(console_handler)
-        self.addHandler(file_handler)
-        
+            # Add the handlers to the logger
+            self.addHandler(self.console_handler)
+            self.addHandler(file_handler)
+            
         self.info("NEW RUN")
+    
+    def toggle_offon(self):
+        self.console_handler.setLevel(level=logging.CRITICAL)
 
 def plot_joint_traj(qs: list[ndarray], title="joint_trj", hold=True):
     qs_copy = np.array(qs)
@@ -159,6 +165,9 @@ def vgg_to_yolo(csv_filepath, img_w, img_h):
             label_str = f"{label} {x} {y} {w} {h}"
             with open(os.path.join(dirpath, filename.replace("png", "txt")), "a") as f:
                 f.write(label_str + "\n") 
+
+def quick_log(script_name: str, msg: str):
+    print(" ===== " + script_name.upper() + " : " + msg + " ===== ")
 
 if __name__ == "__main__":
     vgg_to_yolo("data/in/yolo_dataset_cell/Cells_csv.csv", img_w=1280, img_h=720)
