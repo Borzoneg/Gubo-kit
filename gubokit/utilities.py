@@ -14,14 +14,14 @@ class CustomLogger(logging.Logger):
     """
     Custom class expanding the logger from python library
     """
-    def __init__(self, name, filename=None, console_level="warning", file_level="info", overwrite=True): 
+    def __init__(self, name, filename=None, console_level="warning", file_level="debug", overwrite=True): 
         
         super().__init__(name)
         self.filename = filename
         
         self.console_handler = logging.StreamHandler()
         
-        levels = {'warning': logging.WARNING, 'error': logging.ERROR, 'info': logging.INFO}
+        levels = {'warning': logging.WARNING, 'error': logging.ERROR, 'info': logging.INFO, 'debug': logging.DEBUG}
         self.console_handler.setLevel(level=levels[console_level])
 
         # Create file handler and set level to DEBUG
