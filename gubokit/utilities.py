@@ -17,16 +17,18 @@ class CustomLogger(logging.Logger):
     def __init__(self, name, filename=None, console_level="warning", file_level="debug", overwrite=True): 
         
         super().__init__(name)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         self.filename = filename
         
         self.console_handler = logging.StreamHandler()
+        self.console_handler.setFormatter(formatter)
         
         levels = {'warning': logging.WARNING, 'error': logging.ERROR, 'info': logging.INFO, 'debug': logging.DEBUG}
         self.console_handler.setLevel(level=levels[console_level])
 
         # Create file handler and set level to DEBUG
         if os.path.exists(self.filename):
-            if os.path.getsize(self.filename) > 100e3: # the size is in B
+            if os.path.getsize(self.filename) > 100e3: # the size is in Byte
                 os.remove(self.filename)
         mode = 'a' if not overwrite else 'w' # mode a: append at the end of the file, w: write new file
         if filename is not None:
@@ -34,8 +36,6 @@ class CustomLogger(logging.Logger):
             file_handler.setLevel(level=levels[file_level])
 
             # Create formatter and add it to the handlers
-            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-            self.console_handler.setFormatter(formatter)
             file_handler.setFormatter(formatter)
 
             # Add the handlers to the logger
