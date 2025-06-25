@@ -14,7 +14,7 @@ class CustomLogger(logging.Logger):
     """
     Custom class expanding the logger from python library
     """
-    def __init__(self, name, filename=None, console_level="warning", file_level="debug", overwrite=True): 
+    def __init__(self, name, filename=None, console_level="warning", file_level=None, overwrite=True): 
         
         super().__init__(name)
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -25,22 +25,23 @@ class CustomLogger(logging.Logger):
         
         levels = {'warning': logging.WARNING, 'error': logging.ERROR, 'info': logging.INFO, 'debug': logging.DEBUG}
         self.console_handler.setLevel(level=levels[console_level])
+        self.addHandler(self.console_handler)
 
-        # Create file handler and set level to DEBUG
-        if os.path.exists(self.filename):
-            if os.path.getsize(self.filename) > 100e3: # the size is in Byte
-                os.remove(self.filename)
-        mode = 'a' if not overwrite else 'w' # mode a: append at the end of the file, w: write new file
-        if filename is not None:
-            file_handler = logging.FileHandler(self.filename, mode=mode, encoding='utf-8')
-            file_handler.setLevel(level=levels[file_level])
+        if file_level is not None:    
+            # Create file handler and set level to DEBUG
+            if os.path.exists(self.filename):
+                if os.path.getsize(self.filename) > 100e3: # the size is in Byte
+                    os.remove(self.filename)
+            mode = 'a' if not overwrite else 'w' # mode a: append at the end of the file, w: write new file
+            if filename is not None:
+                file_handler = logging.FileHandler(self.filename, mode=mode, encoding='utf-8')
+                file_handler.setLevel(level=levels[file_level])
 
-            # Create formatter and add it to the handlers
-            file_handler.setFormatter(formatter)
+                # Create formatter and add it to the handlers
+                file_handler.setFormatter(formatter)
 
-            # Add the handlers to the logger
-            self.addHandler(self.console_handler)
-            self.addHandler(file_handler)
+                # Add the handlers to the logger
+                self.addHandler(file_handler)
             
         self.info("NEW RUN")
     
