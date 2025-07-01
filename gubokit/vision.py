@@ -1,7 +1,7 @@
 import pyrealsense2 as rs
 import numpy as np
 import cv2
-from gubokit.robotics import Robot
+from gubokit.robotics import Robot, VacuumGripper
 import spatialmath as sm
 from gubokit.utilities import rotvec_to_T, T_to_rotvec
 import os
@@ -295,6 +295,41 @@ def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/
         result[0].show()
         input(">>>")
 
+# def collect_photos_at_pose(camera: RealSenseCamera, robot: Robot, foldername="pics", rangex=0.08, samplex=5, rangey=0.1, sampley=5, rangez=0.05, samplez=4):
+def collect_photos_at_pose(camera: RealSenseCamera, robot: Robot, foldername="pics", rangex=0.1, samplex=5, rangey=0.2, sampley=5, rangez=0.05, samplez=4):
+    os.makedirs(foldername, exist_ok=True)
+    T0 = robot.get_TCP_T()
+    i = 0
+    for dz in np.linspace(-rangez, rangez, samplez):
+        for dx in np.linspace(-rangex, rangex, samplex):
+            for dy in np.linspace(-rangey, rangey, sampley):
+                new_pose =  T0 * sm.SE3([dx, dy ,dz])
+                robot.move_to_cart_pose(new_pose)
+                frame = camera.get_color_frame()
+                cv2.imshow("frame", frame)
+                cv2.waitKey(1)
+                cv2.imwrite(foldername + f"/pic{i:02d}.png", frame)
+                i += 1
+                # cv2.waitKey(0)
+
 if __name__ == "__main__":
-    robot = Robot("192.168.1.100")
-    camera = RealSenseCamera(({'color': [1920, 1080]}))
+    R = sm.SO3([[-0.003768884463184431, -0.9999801870110973700,  0.0050419336721138118], 
+        [0.9999374423980765800, -0.0038217260702308998, -0.0105121691499708400], 
+        [0.0105312297618392200,  0.0050019991098505349,  0.9999320342926355500]])
+    t = np.array([0.051939876523448010, -0.0323596382860819900,  0.0211982932413351600])
+    camera_Ext = sm.SE3.Rt(R, t)
+    home_pos = [0.5599642992019653, -1.6431008778014125, 1.8597601095782679, -1.7663117847838343, -1.5613859335528772, -1.4]
+    ip = "192.168.1.100"
+
+    camera = RealSenseCamera(extrinsic=camera_Ext,
+                                                enabled_strams={
+                                                'color': [1920, 1080],
+                                                'depth': [640, 480],
+                                                # 'infrared': [640, 480]
+                                                })
+    robot = Robot(ip=ip, home_jpos=home_pos)
+    gripper = VacuumGripper(robot, 0)
+    robot.add_gripper(gripper=gripper)
+    robot.move_to_home()
+
+    collect_photos_at_pose(camera=camera, robot=robot)

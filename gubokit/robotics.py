@@ -472,6 +472,13 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         if self.gripper is not None:
             return self.gripper.get_status()
 
+    def move_to_home(self):
+        self.moveJ(self.home_pos)
+
+    def get_TCP_T(self):
+        pose = np.array(self.getActualTCPPose())
+        return rotvec_to_T(pose)
+
 class Sphere():
     """Geometrical representation of a sphere
     """
