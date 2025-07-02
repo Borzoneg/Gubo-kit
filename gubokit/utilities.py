@@ -17,7 +17,7 @@ class CustomLogger(logging.Logger):
     def __init__(self, name, filename=None, console_level="warning", file_level=None, overwrite=True): 
         
         super().__init__(name)
-        formatter = logging.Formatter('%(name)s: %(asctime)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(name)-6s: %(asctime)s - %(levelname)-7s - %(message)s')
         self.filename = filename
         
         self.console_handler = logging.StreamHandler()
