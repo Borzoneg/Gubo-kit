@@ -1,4 +1,7 @@
-import pyrealsense2 as rs
+try:
+    import pyrealsense2 as rs
+except:
+    print("PYREALSENSE NOT IMPORTED")
 import numpy as np
 import cv2
 from gubokit.robotics import Robot, VacuumGripper
