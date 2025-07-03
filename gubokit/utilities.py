@@ -170,5 +170,10 @@ def vgg_to_yolo(csv_filepath, img_w, img_h):
 def quick_log(script_name: str, msg: str):
     print(" ===== " + script_name.upper() + " : " + msg + " ===== ")
 
+def bool_to_str_fancy(var: bool):
+    if var is None:
+        return "○"
+    return "✗" if not var else "✓" 
+
 if __name__ == "__main__":
     vgg_to_yolo("data/in/yolo_dataset_cell/Cells_csv.csv", img_w=1280, img_h=720)
