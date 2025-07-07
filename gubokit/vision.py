@@ -298,7 +298,21 @@ def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/
         result[0].show()
         input(">>>")
 
-# def collect_photos_at_pose(camera: RealSenseCamera, robot: Robot, foldername="pics", rangex=0.08, samplex=5, rangey=0.1, sampley=5, rangez=0.05, samplez=4):
+def test_YOLO_folder(yolo_model, foldername):
+    for f in os.listdir(foldername):
+        frame = cv2.imread(os.path.join(foldername, f))
+        results = yolo_model.predict(frame, verbose=True)
+        cv2.imshow("Prediction", results[0].plot())
+        cv2.waitKey(0)
+
+def test_YOLO_camera(yolo_model, camera):
+    ans = ''
+    while ans != 'q':
+        frame = camera.get_color_frame()
+        results = yolo_model.predict(frame, verbose=True)
+        cv2.imshow("Prediction", results[0].plot())
+        ans = chr(0xff & cv2.waitKey(1))
+
 def collect_photos_at_pose(camera: RealSenseCamera, robot: Robot, foldername="pics", rangex=0.1, samplex=5, rangey=0.2, sampley=5, rangez=0.05, samplez=4):
     os.makedirs(foldername, exist_ok=True)
     T0 = robot.get_TCP_T()
@@ -324,15 +338,13 @@ if __name__ == "__main__":
     home_pos = [0.5599642992019653, -1.6431008778014125, 1.8597601095782679, -1.7663117847838343, -1.5613859335528772, -1.4]
     ip = "192.168.1.100"
 
-    camera = RealSenseCamera(extrinsic=camera_Ext,
-                                                enabled_strams={
-                                                'color': [1920, 1080],
-                                                'depth': [640, 480],
-                                                # 'infrared': [640, 480]
-                                                })
-    robot = Robot(ip=ip, home_jpos=home_pos)
-    gripper = VacuumGripper(robot, 0)
-    robot.add_gripper(gripper=gripper)
-    robot.move_to_home()
+    camera = RealSenseCamera(extrinsic=camera_Ext, enabled_strams={'color': [1920, 1080], 'depth': [640, 480]}) # 'infrared': [640, 480]
+    # robot = Robot(ip=ip, home_jpos=home_pos)
+    # gripper = VacuumGripper(robot, 0)
+    # robot.add_gripper(gripper=gripper)
+    # robot.move_to_home()
 
-    collect_photos_at_pose(camera=camera, robot=robot)
+    packs_yolo_model = YOLO("data/packs_best_model.pt")
+    cells_yolo_model = YOLO("data/cells_best_model.pt")
+
+    test_YOLO_camera(cells_yolo_model, camera=camera)    
