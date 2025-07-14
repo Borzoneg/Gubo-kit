@@ -142,28 +142,25 @@ class MemGui(tk.Tk):
         self.layout_gui()
         self.bb_drawer = _BoundingBoxEditor(self.home_frame.canvas, self.home_frame)
         
+        self.select_label()
         self.import_model()
         self.save_foldername()
 
         self.img = cv2.imread(os.path.join(self.foldername, f'pic{self.idx:02d}.png'))
         self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
         self.img = PIL.Image.fromarray(self.img)
+        self.classify_and_draw(self.img)
+        os.makedirs(os.path.join('yolo_annotator', 'label'), exist_ok=True)
+        os.makedirs(os.path.join('yolo_annotator', 'imgs'), exist_ok=True)
 
     def layout_gui(self):
         self.title("MeM use case")
         self.geometry("1280x720")
 
-        # self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=5)
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.configure(bg="#4b5661")
-
-        # self.top_frame = tk.Frame(self, bg='#1e2a38')
-        # self.top_frame.grid(row=0, column=0, sticky='nsew', padx=(5, 5), pady=(5, 5))
-        # self.top_frame.grid_columnconfigure(0, weight=1)
-        # self.top_frame.grid_columnconfigure(1, weight=2)
-        # self.top_frame.grid_columnconfigure(1, weight=2)
         self.mid_frame = tk.Frame(self, bg="#768799")
         self.mid_frame.grid(row=0, column=0, sticky='nsew', padx=(5, 5), pady=(5, 5))
         self.mid_frame.grid_columnconfigure(0, weight=1)
@@ -173,7 +170,7 @@ class MemGui(tk.Tk):
         [self.bot_frame.grid_rowconfigure(i, weight=1, minsize=10) for i in range(3)]
         self.bot_frame.grid_columnconfigure(0, weight=1)
         self.bot_frame.grid_columnconfigure(1, weight=1)
-        # self.bot_frame.grid_columnconfigure(2, weight=1)
+        self.bot_frame.grid_propagate(False)
                 
         self.home_frame = HomeScreen(self.mid_frame, self)
         self.home_frame.config(background='#2e3f4f')
@@ -198,10 +195,21 @@ class MemGui(tk.Tk):
         self.folder_btn = tk.Button(self.bot_frame, text='Confirm', command=self.save_foldername)
         self.folder_btn.grid(row=1, column=2, sticky='nsew')
         
+        self.label_label = tk.Label(self.bot_frame, text="Label:")
+        self.label_label.grid(row=2, column=0, sticky='nsew')
+        self.label_entry = tk.Entry(self.bot_frame, textvariable=self.foldername)
+        self.label_entry.insert(0, '0')
+        self.label_entry.grid(row=2, column=1, sticky='nsew')
+        self.label_btn = tk.Button(self.bot_frame, text='Confirm', command=self.select_label)
+        self.label_btn.grid(row=2, column=2, sticky='nsew')
+        
         self.add_bb_btn = tk.Button(self.bot_frame, text='add', command=self.add_bb)
-        self.add_bb_btn.grid(row=2, column=0, sticky='nsew')
+        self.add_bb_btn.grid(row=3, column=0, sticky='nsew')
         self.next_btn = tk.Button(self.bot_frame, text='next', command=self.next)
-        self.next_btn.grid(row=2, column=1, columnspan=2, sticky='nsew')
+        self.next_btn.grid(row=3, column=1, columnspan=2, sticky='nsew')
+
+    def select_label(self):
+        self.label = int(self.label_entry.get())
 
     def save_foldername(self):
         self.idx = 0
@@ -218,18 +226,24 @@ class MemGui(tk.Tk):
         result = self.model.predict(img, verbose=False)
         drawing_bbs = []
         for i, box in enumerate(result[0].boxes):
-            model = box.cls
+            model = int(box.cls)
+            if self.label != model:
+                print(f"Cell {i} classified as {model}")
             confidence = (box.conf)
             x, y, w, h = map(int, box.xywh[0].cpu().numpy())
-            drawing_bbs.append([x-w//2, y-w//2, x+w//2, y+w//2])
+            drawing_bbs.append([x-w//2, y-h//2, x+w//2, y+h//2])
+
         self.bb_drawer.add_bbs(drawing_bbs)
 
-    def write_bbs(self):
-        with open(os.path.join(self.foldername, 'label', f'pic{self.idx:02d}.txt'))
-        
+    def save_current_photo(self):
+        self.img.save(os.path.join('yolo_annotator', 'imgs', f'pic{self.idx:02d}.png'))
+        with open(os.path.join('yolo_annotator', 'label', f'pic{self.idx:02d}.txt'), '+a') as f:
+            for bb in self.bb_drawer.bbs_position:
+                x, y, w, h = (bb[0]+bb[2]) // 2, (bb[1]+bb[3]) // 2, bb[2]-bb[0], bb[3]-bb[1]
+                f.write(f"{self.label} {x} {y} {w} {h}\n")
 
     def next(self):
-        self.write_bbs()
+        self.save_current_photo()
         self.idx += 1
         self.bb_drawer = _BoundingBoxEditor(self.home_frame.canvas, self.home_frame)
         self.img = cv2.imread(os.path.join(self.foldername, f'pic{self.idx:02d}.png'))
@@ -240,7 +254,6 @@ class MemGui(tk.Tk):
     def after_update(self):
         scale, padx, pady = self.home_frame.draw_image(self.img)
         self.bb_drawer.draw_boxes(scale=scale, padx=padx, pady=pady)
-        print(self.bb_drawer.bbs_position)
         self.after(1, self.after_update)
 
 class HomeScreen(tk.Frame):
@@ -266,7 +279,30 @@ class HomeScreen(tk.Frame):
         self.canvas.lower('image')
         return scale, padx, pady
 
+def check_yolo_annotation(foldername):
+    for f in os.listdir(os.path.join(foldername, 'imgs')):
+        img_file_path = (os.path.join(foldername, 'imgs', f))
+        label_file_path = (os.path.join(foldername, 'label', f.replace('png', 'txt')))
+        img = cv2.imread(img_file_path)
+        with open(label_file_path) as lf:
+            i = 0
+            for line in lf:
+                i += 1
+                bb = [int(s) for s in line.strip('\n').split(' ')]
+                pt1, pt2 = (bb[1]-bb[3]//2, bb[2]-bb[4]//2), (bb[1]+bb[3]//2, bb[2]+bb[4]//2)
+                cv2.rectangle(img, pt1, pt2, color=(0, 0, 255), thickness=3)
+            print(i, "cells")
+        cv2.namedWindow("img", cv2.WINDOW_NORMAL)  # Create resizable window
+        cv2.resizeWindow("img", 800, 600)
+        cv2.imshow("img", img)
+        cv2.waitKey(0)
+
 if __name__ == "__main__":
-    app = MemGui()
-    app.after(1, app.after_update)
-    app.mainloop()
+    # app = MemGui()
+    # app.after(1, app.after_update)
+    check_yolo_annotation('18650')
+    # app.mainloop()
+    # img = cv2.imread("yolo_annotator/imgs/pic00.png")
+    # cv2.circle(img, (2811 ,249), radius=66, color=(0,0,0))
+    # cv2.imshow("img", img)
+    # cv2.waitKey(0)
