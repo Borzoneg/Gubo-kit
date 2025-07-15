@@ -276,7 +276,7 @@ def show_stream_and_save_frame(filepath, camera):
         elif key == 't':
             cv2.imwrite(os.path.join(filepath), camera_frame)
 
-def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/yolo_runs", name="experiment", epochs=50, imgsz=640, iou=0.5):
+def train_YOLO(yaml_path, model="yolov8n.pt", savepath="data/out/yolo_runs", name="experiment", epochs=50, imgsz=640, iou=0.5):
     """_summary_
 
     Args:
@@ -290,20 +290,23 @@ def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/
         iou (float, optional): _description_. Defaults to 0.5.
     """
     model = YOLO(model)
-    model.train(data=yaml_path, project=savepath, name=name,
-                epochs=epochs, imgsz=imgsz, iou=iou)
-    # model = YOLO("/home/gu/Gubo-kit/files/yolo/experiment/weights/best.pt") 
-    for img_path in test_imgs_path:
-        result = model(img_path)
-        result[0].show()
-        input(">>>")
+    model.train(data=yaml_path, project=savepath, name=name, epochs=epochs, imgsz=imgsz, iou=iou) 
 
 def test_YOLO_folder(yolo_model, foldername):
+    ans = ''
     for f in os.listdir(foldername):
         frame = cv2.imread(os.path.join(foldername, f))
-        results = yolo_model.predict(frame, verbose=True)
-        cv2.imshow("Prediction", results[0].plot())
-        cv2.waitKey(0)
+        results = yolo_model.predict(frame, verbose=False)
+        for box in results[0].boxes:
+            label = int(box.cls[0])
+            color =  (label*255, 0, 0)
+            x_min, y_min, x_max, y_max =  map(int, box.xyxy[0].cpu().numpy())
+            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), color=color, thickness=2)
+        cv2.imshow("Prediction", frame)
+        ans = chr(cv2.waitKey(0) & 0xFF)
+        if ans == 'q':
+            print("quitting...")
+            break
 
 def test_YOLO_camera(yolo_model, camera):
     ans = ''
@@ -330,21 +333,6 @@ def collect_photos_at_pose(camera: RealSenseCamera, robot: Robot, foldername="pi
                 # cv2.waitKey(0)
 
 if __name__ == "__main__":
-    R = sm.SO3([[-0.003768884463184431, -0.9999801870110973700,  0.0050419336721138118], 
-        [0.9999374423980765800, -0.0038217260702308998, -0.0105121691499708400], 
-        [0.0105312297618392200,  0.0050019991098505349,  0.9999320342926355500]])
-    t = np.array([0.051939876523448010, -0.0323596382860819900,  0.0211982932413351600])
-    camera_Ext = sm.SE3.Rt(R, t)
-    home_pos = [0.5599642992019653, -1.6431008778014125, 1.8597601095782679, -1.7663117847838343, -1.5613859335528772, -1.4]
-    ip = "192.168.1.100"
-
-    camera = RealSenseCamera(extrinsic=camera_Ext, enabled_strams={'color': [1920, 1080], 'depth': [640, 480]}) # 'infrared': [640, 480]
-    # robot = Robot(ip=ip, home_jpos=home_pos)
-    # gripper = VacuumGripper(robot, 0)
-    # robot.add_gripper(gripper=gripper)
-    # robot.move_to_home()
-
-    packs_yolo_model = YOLO("data/packs_best_model.pt")
-    cells_yolo_model = YOLO("data/cells_best_model.pt")
-
-    test_YOLO_camera(cells_yolo_model, camera=camera)    
+    # train_YOLO('/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_cell/dataset.yaml')
+    model = YOLO('/home/gu/Gubo-kit/data/out/yolo_runs/experiment3/weights/best.pt')
+    test_YOLO_folder(model, '/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_cell/images/test')

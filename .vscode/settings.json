@@ -1,6 +1,7 @@
 {
     "python.analysis.extraPaths": [
-        "$HOME/Gubo-kit"
+        "$HOME/Gubo-kit",
+        "/home/gu/pyenv/lib/python3.12/site-packages",
     ],
     "cmake.ignoreCMakeListsMissing": true
 }
