@@ -276,7 +276,7 @@ def show_stream_and_save_frame(filepath, camera):
         elif key == 't':
             cv2.imwrite(os.path.join(filepath), camera_frame)
 
-def train_YOLO(yaml_path, model="yolov8n.pt", savepath="data/in/yolo_runs", name="experiment", epochs=50, imgsz=640, iou=0.5):
+def train_YOLO(yaml_path, model="yolov8n.pt", savepath="data/out/yolo_runs", name="experiment", epochs=50, imgsz=640, iou=0.5):
     """_summary_
 
     Args:
@@ -290,15 +290,24 @@ def train_YOLO(yaml_path, model="yolov8n.pt", savepath="data/in/yolo_runs", name
         iou (float, optional): _description_. Defaults to 0.5.
     """
     model = YOLO(model)
-    model.train(data=yaml_path, project=savepath, name=name,
-                epochs=epochs, imgsz=imgsz, iou=iou) 
+    model.train(data=yaml_path, project=savepath, name=name, epochs=epochs, imgsz=imgsz, iou=iou) 
 
 def test_YOLO_folder(yolo_model, foldername):
+    ans = ''
     for f in os.listdir(foldername):
         frame = cv2.imread(os.path.join(foldername, f))
-        results = yolo_model.predict(frame, verbose=True)
-        cv2.imshow("Prediction", results[0].plot())
-        cv2.waitKey(0)
+        results = yolo_model.predict(frame, verbose=False)
+        for box in results[0].boxes:
+            label = box.cls
+            x_min, y_min, x_max, y_max =  map(int, box.xyxy[0].cpu().numpy())
+            x, y, w, h =  map(int, box.xywh[0].cpu().numpy())
+            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), color=(0,0,255), thickness=2)
+            cv2.circle(frame, (x, y), radius=w//2, color=(0,0,255), thickness=2)
+        cv2.imshow("Prediction", frame)
+        ans = chr(cv2.waitKey(0) & 0xFF)
+        if ans == 'q':
+            print("quitting...")
+            break
 
 def test_YOLO_camera(yolo_model, camera):
     ans = ''
@@ -326,5 +335,5 @@ def collect_photos_at_pose(camera: RealSenseCamera, robot: Robot, foldername="pi
 
 if __name__ == "__main__":
     train_YOLO('/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_cell/dataset.yaml')
-    # model = YOLO('/home/gu/Gubo-kit/data/in/yolo_runs/experiment5/weights/best.pt')
-    # test_YOLO_folder(model, '/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_cell/imgs/test')
+    # model = YOLO('/home/gu/Gubo-kit/data/out/yolo_runs/experiment1/weights/best.pt')
+    # test_YOLO_folder(model, '/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_cell/images/test')
