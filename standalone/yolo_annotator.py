@@ -299,7 +299,23 @@ def check_yolo_annotation(foldername):
         cv2.waitKey(0)
 
 if __name__ == "__main__":
-    app = MemGui()
-    app.after(1, app.after_update)
-    app.mainloop()
+    # app = MemGui()
+    # app.after(1, app.after_update)
+    # app.mainloop()
     # check_yolo_annotation('18650')
+    img_w, img_h = 1920, 1080
+    for dirpath, dirnames, filenames in os.walk('/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_cell/label'):
+        for filename in filenames:
+            print(filename)
+            fpath = os.path.join(dirpath, filename)
+            normalized_lines = []
+            with open(fpath, 'r') as f:
+                for line in f:
+                    cls, x, y, w, h = map(float, line.strip().split())
+                    x_center = (x + w / 2) / img_w
+                    y_center = (y + h / 2) / img_h
+                    w /= img_w
+                    h /= img_h
+                    normalized_lines.append(f"{int(cls)} {x_center:.6f} {y_center:.6f} {w:.6f} {h:.6f}\n")
+            with open(fpath, 'w') as f:
+                f.writelines(normalized_lines)
