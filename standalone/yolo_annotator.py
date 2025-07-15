@@ -146,16 +146,17 @@ class MemGui(tk.Tk):
         self.import_model()
         self.save_foldername()
 
+        os.makedirs(os.path.join('yolo_annotator', 'label'), exist_ok=True)
+        os.makedirs(os.path.join('yolo_annotator', 'imgs'), exist_ok=True)
+
         self.img = cv2.imread(os.path.join(self.foldername, f'pic{self.idx:02d}.png'))
         self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
         self.img = PIL.Image.fromarray(self.img)
         self.classify_and_draw(self.img)
-        os.makedirs(os.path.join('yolo_annotator', 'label'), exist_ok=True)
-        os.makedirs(os.path.join('yolo_annotator', 'imgs'), exist_ok=True)
 
     def layout_gui(self):
         self.title("MeM use case")
-        self.geometry("1280x720")
+        self.geometry("2560x1440")
 
         self.grid_rowconfigure(0, weight=5)
         self.grid_rowconfigure(1, weight=1)
@@ -190,7 +191,7 @@ class MemGui(tk.Tk):
         self.folder_label = tk.Label(self.bot_frame, text="Folder:")
         self.folder_label.grid(row=1, column=0, sticky='nsew')
         self.folder_entry = tk.Entry(self.bot_frame, textvariable=self.foldername)
-        self.folder_entry.insert(0, '/home/gu/fluently_ws/fluently_mem/data/pics_18650')
+        self.folder_entry.insert(0, '/home/gu/fluently_ws/fluently_mem/data/pics_21700')
         self.folder_entry.grid(row=1, column=1, sticky='nsew')
         self.folder_btn = tk.Button(self.bot_frame, text='Confirm', command=self.save_foldername)
         self.folder_btn.grid(row=1, column=2, sticky='nsew')
@@ -198,7 +199,7 @@ class MemGui(tk.Tk):
         self.label_label = tk.Label(self.bot_frame, text="Label:")
         self.label_label.grid(row=2, column=0, sticky='nsew')
         self.label_entry = tk.Entry(self.bot_frame, textvariable=self.foldername)
-        self.label_entry.insert(0, '0')
+        self.label_entry.insert(0, '1')
         self.label_entry.grid(row=2, column=1, sticky='nsew')
         self.label_btn = tk.Button(self.bot_frame, text='Confirm', command=self.select_label)
         self.label_btn.grid(row=2, column=2, sticky='nsew')
@@ -298,11 +299,7 @@ def check_yolo_annotation(foldername):
         cv2.waitKey(0)
 
 if __name__ == "__main__":
-    # app = MemGui()
-    # app.after(1, app.after_update)
-    check_yolo_annotation('18650')
-    # app.mainloop()
-    # img = cv2.imread("yolo_annotator/imgs/pic00.png")
-    # cv2.circle(img, (2811 ,249), radius=66, color=(0,0,0))
-    # cv2.imshow("img", img)
-    # cv2.waitKey(0)
+    app = MemGui()
+    app.after(1, app.after_update)
+    app.mainloop()
+    # check_yolo_annotation('18650')
