@@ -280,12 +280,11 @@ def train_YOLO(yaml_path, model="yolov8n.pt", savepath="data/out/yolo_runs", nam
     """_summary_
 
     Args:
-        test_imgs_path (_type_): should be a list of path to images we not trained with
-        model (str, optional): _description_. Defaults to "yolov8n.pt".
-        yaml_path (str, optional): _description_. Defaults to "data/in/yolo_dataset_pack/dataset.yaml".
-        savepath (str, optional): _description_. Defaults to "files/yolo".
-        name (str, optional): _description_. Defaults to "experiment".
-        epochs (int, optional): _description_. Defaults to 50.
+        yaml_path (str, optional): the yaml file of the dataset
+        model (str, optional): yolo model. Defaults to "yolov8n.pt".
+        savepath (str, optional): the folder  in which we save results. Defaults to "files/yolo".
+        name (str, optional): name of the folder. Defaults to "experiment".
+        epochs (int, optional): Defaults to 50.
         imgsz (int, optional): _description_. Defaults to 640.
         iou (float, optional): _description_. Defaults to 0.5.
     """
