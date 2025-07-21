@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn import neighbors
 import torch
 from torch import nn
+import torchvision
 import torch.nn.functional as functional
 import copy
 from torch.utils.data import Dataset, DataLoader
@@ -194,4 +195,3 @@ def test_mlps(loader_train, loader_valid, epochs=50, lrs=[1e-1, 1e-2, 1e-3], hid
     #     valid_accuracy = np.array(all_accuracies[net][1])
     #     print(f"{net:10s} train accuracy max: {train_accuracy.max():.4f} train accuracy mean: {train_accuracy.mean():.4f} valid accuracy max: {valid_accuracy.max():.4f} valid accuracy mean: {valid_accuracy.mean():.4f}")
     return best_model
-

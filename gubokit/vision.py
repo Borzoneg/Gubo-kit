@@ -14,7 +14,13 @@ import yaml
 from numpy import ndarray
 from ultralytics import YOLO
 import re
+import torchvision.transforms as T
 import cv2.aruco as aruco
+from torchvision.datasets import ImageFolder
+from torchvision.models import resnet18
+from torch.utils.data import DataLoader
+import torch.nn as nn
+import torch
 
 class RealSenseCamera():
     def __init__(self, extrinsic: sm.SE3, enabled_strams={'color': [1920, 1080], 'depth': [640, 480], 'infrared': [640, 480]}):
@@ -335,20 +341,102 @@ def extract_bb_from_img(img, bb):
     x_min, y_min, x_max, y_max = bb
     return img[y_min:y_max, x_min:x_max]
 
+def train_resnet(dataset_path):
+    transform = T.Compose([
+    T.Resize((224, 224)),
+    T.ToTensor(),
+    T.Normalize(mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]),
+    ])
+    
+    train_ds = ImageFolder(os.path.join(dataset_path, "train"), transform=transform)
+    val_ds = ImageFolder(os.path.join(dataset_path, "val"), transform=transform)
+    print(train_ds.classes)
+    print(train_ds.class_to_idx)
+
+    train_loader = DataLoader(train_ds, batch_size=32, shuffle=True)
+    val_loader = DataLoader(val_ds, batch_size=32)
+
+    model = resnet18(pretrained=True)
+    model.fc = nn.Linear(model.fc.in_features, 2)  # 2 classes: ok, ko
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+
+    num_epochs = 10
+
+    for epoch in range(num_epochs):
+        model.train()
+        total_loss, correct, total = 0, 0, 0
+        for imgs, labels in train_loader:
+            imgs, labels = imgs.to(device), labels.to(device)
+
+            outputs = model(imgs)
+            loss = criterion(outputs, labels)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            total_loss += loss.item()
+            preds = outputs.argmax(1)
+            correct += (preds == labels).sum().item()
+            total += labels.size(0)
+
+        acc = correct / total
+        print(f"Epoch {epoch+1}: Loss = {total_loss:.4f}, Accuracy = {acc:.4f}")
+
+        torch.save(model.state_dict(), "cell_classifier.pth")
+
+def annotate_classifier(folder_path, classes: list[str]):
+    for cls in classes:
+        os.makedirs(os.path.join(folder_path, cls), exist_ok=True)
+    for f in os.listdir(folder_path):
+        if '.png' in f:
+            img = cv2.imread(os.path.join(folder_path, f))
+            cv2.imshow("img", img)
+            ans = chr(cv2.waitKey(0) & 0xff)
+            try:
+                print(os.path.join(folder_path, classes[int(ans)], f))
+                cv2.imwrite(os.path.join(folder_path, classes[int(ans)], f), img)
+            except (IndexError, ValueError):
+                print("Please press the number corrensponding with the class")
+            if ans == 'q':
+                break
+
 if __name__ == "__main__":
-    cells_yolo_model = YOLO("/home/gu/fluently_ws/fluently_mem/data/cells_best_model.pt")
-    idx = 0
-    for f in os.listdir('/home/gu/Desktop/cells'):
-        print(f)
-        img = cv2.imread(f'/home/gu/Desktop/cells/{f}')
-        # cv2.destroyAllWindows()
-        # cv2.imshow(f"{f}", img)
-        # cv2.waitKey(0)
-        result = cells_yolo_model.predict(img)
-        for i, box in enumerate(result[0].boxes):
-            bb = box.xyxy[0].int().tolist()
-            close_up = extract_bb_from_img(img, bb)
-            cv2.imwrite(f'/home/gu/Desktop/cells/close_ups/pic{idx:02d}.png', close_up)
-            idx += 1
-            # cv2.imshow(f"{f} : box {i}", close_up)
-            # cv2.waitKey(0)
+    folder_path = '/home/gu/fluently_ws/fluently_mem/data/close_ups'
+    # annotate_classifier(folder_path=folder_path, classes=['asd', 'qwe'])
+    # train_resnet(folder_path)
+
+    # Define device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = resnet18(pretrained=False)
+    model.fc = nn.Linear(model.fc.in_features, 2)  # binary: ok vs ko
+    model = model.to(device)
+    model.load_state_dict(torch.load('cell_classifier.pth', map_location=device))
+    model.eval()
+    
+    transform = T.Compose([
+    T.ToTensor(),
+    T.Resize((224, 224)),
+    T.Normalize(mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]),
+    ])
+
+    for dirpath, dirnames, filenames in os.walk(os.path.join(folder_path, 'test')):
+        for imgf in filenames:
+            print(os.path.join(dirpath, imgf))
+            img = cv2.imread(os.path.join(dirpath, imgf))
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            img_tensor = transform(img).unsqueeze(0).to(device)
+            with torch.no_grad():
+                output = model(img_tensor)
+                predicted = output.argmax(1).item()
+                cv2.imshow("img", img)
+                print(f"predicted: {predicted}")
+                cv2.waitKey(0)
