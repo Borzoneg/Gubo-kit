@@ -134,11 +134,16 @@ class _BoundingBoxEditor:
         self.selected_box = None
         self.dragging = None
 
-class MemGui(tk.Tk):
-    def __init__(self):
+class YOLOAnnotator(tk.Tk):
+    def __init__(self, default_foldername='', default_modelpath='', default_label=''):
         super().__init__()
         self.idx = 0
         self.foldername = ''
+
+        self.default_foldername = default_foldername
+        self.default_modelpath = default_modelpath
+        self.default_label = default_label
+        
         self.layout_gui()
         self.bb_drawer = _BoundingBoxEditor(self.home_frame.canvas, self.home_frame)
         
@@ -155,7 +160,7 @@ class MemGui(tk.Tk):
 
     def layout_gui(self):
         self.title("MeM use case")
-        self.geometry("1280x720")
+        self.geometry("2560x1440")
 
         self.grid_rowconfigure(0, weight=5)
         self.grid_rowconfigure(1, weight=1)
@@ -182,7 +187,7 @@ class MemGui(tk.Tk):
         self.model_label = tk.Label(self.bot_frame, text="Model:")
         self.model_label.grid(row=0, column=0, sticky='nsew')
         self.model_entry = tk.Entry(self.bot_frame)
-        self.model_entry.insert(0, '/home/gu/fluently_ws/fluently_mem/data/cells_best_model.pt')
+        self.model_entry.insert(0, self.default_modelpath)
         self.model_entry.grid(row=0, column=1, sticky='nsew')
         self.model_btn = tk.Button(self.bot_frame, text='Confirm', command=self.import_model)
         self.model_btn.grid(row=0, column=2, sticky='nsew')
@@ -190,7 +195,7 @@ class MemGui(tk.Tk):
         self.folder_label = tk.Label(self.bot_frame, text="Folder:")
         self.folder_label.grid(row=1, column=0, sticky='nsew')
         self.folder_entry = tk.Entry(self.bot_frame, textvariable=self.foldername)
-        self.folder_entry.insert(0, '/home/gu/Desktop/cells')
+        self.folder_entry.insert(0, self.default_foldername)
         self.folder_entry.grid(row=1, column=1, sticky='nsew')
         self.folder_btn = tk.Button(self.bot_frame, text='Confirm', command=self.save_foldername)
         self.folder_btn.grid(row=1, column=2, sticky='nsew')
@@ -198,7 +203,7 @@ class MemGui(tk.Tk):
         self.label_label = tk.Label(self.bot_frame, text="Label:")
         self.label_label.grid(row=2, column=0, sticky='nsew')
         self.label_entry = tk.Entry(self.bot_frame, textvariable=self.foldername)
-        self.label_entry.insert(0, '0')
+        self.label_entry.insert(0, self.default_label)
         self.label_entry.grid(row=2, column=1, sticky='nsew')
         self.label_btn = tk.Button(self.bot_frame, text='Confirm', command=self.select_label)
         self.label_btn.grid(row=2, column=2, sticky='nsew')
@@ -242,14 +247,18 @@ class MemGui(tk.Tk):
 
     def save_current_photo(self):
         self.img.save(os.path.join('yolo_annotator', 'imgs', f'pic{self.idx:02d}.png'))
-        with open(os.path.join('yolo_annotator', 'label', f'pic{self.idx:02d}.txt'), '+a') as f:
+        with open(os.path.join('yolo_annotator', 'label', f'pic{self.idx:02d}.txt'), 'w') as f:
             for bb in self.bb_drawer.bbs_position:
-                x, y, w, h = (bb[0]+bb[2]) // 2, (bb[1]+bb[3]) // 2, bb[2]-bb[0], bb[3]-bb[1]
-                f.write(f"{self.label} {x} {y} {w} {h}\n")
+                x = ((bb[0]+bb[2]) / 2) / self.img.size[0]
+                y = ((bb[1]+bb[3]) / 2) / self.img.size[1]
+                w = (bb[2]-bb[0]) / self.img.size[0]
+                h = (bb[3]-bb[1]) / self.img.size[1]
+                f.write(f"{self.label} {x:.6f} {y:.6f} {w:.6f} {h:.6f}\n")
 
     def next(self):
         self.save_current_photo()
         self.idx += 1
+        print(f"idx: {self.idx}")
         self.bb_drawer = _BoundingBoxEditor(self.home_frame.canvas, self.home_frame)
         self.img = cv2.imread(os.path.join(self.foldername, f'pic{self.idx:02d}.png'))
         self.classify_and_draw(self.img)
@@ -296,8 +305,11 @@ def check_yolo_annotation(foldername):
             i = 0
             for line in lf:
                 i += 1
-                bb = [int(s) for s in line.strip('\n').split(' ')]
-                pt1, pt2 = (bb[1]-bb[3]//2, bb[2]-bb[4]//2), (bb[1]+bb[3]//2, bb[2]+bb[4]//2)
+                _, x, y, w, h = [float(s) for s in line.strip('\n').split(' ')]
+                img_h, img_w = img.shape[:2]
+                # pt1, pt2 = np.array((x-(bb[3]/2), bb[2]-(bb[4]/2))) * img.shape[0], np.array((bb[1]+(bb[3]/2), bb[2]+(bb[4]/2)))*img.shape[1]
+                pt1 = (int((x - w/2) * img_w), int((y - h/2) * img_h))
+                pt2 = (int((x + w/2) * img_w), int((y + h/2) * img_h))
                 cv2.rectangle(img, pt1, pt2, color=(0, 0, 255), thickness=3)
             print(i, "cells")
         cv2.namedWindow("img", cv2.WINDOW_NORMAL)  # Create resizable window
@@ -306,11 +318,7 @@ def check_yolo_annotation(foldername):
         cv2.waitKey(0)
 
 if __name__ == "__main__":
-    app = MemGui()
+    app = YOLOAnnotator(default_foldername='/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_cell/images/train', default_modelpath='/home/gu/fluently_ws/fluently_mem/data/cells_best_model.pt', default_label='0')
     app.after(1, app.after_update)
     app.mainloop()
-    # check_yolo_annotation('18650')
-    # img = cv2.imread("yolo_annotator/imgs/pic00.png")
-    # cv2.circle(img, (2811 ,249), radius=66, color=(0,0,0))
-    # cv2.imshow("img", img)
-    # cv2.waitKey(0)
+    # check_yolo_annotation('yolo_annotator')

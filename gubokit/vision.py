@@ -276,34 +276,36 @@ def show_stream_and_save_frame(filepath, camera):
         elif key == 't':
             cv2.imwrite(os.path.join(filepath), camera_frame)
 
-def train_YOLO(test_imgs_path, yaml_path, model="yolov8n.pt", savepath="data/in/yolo_runs", name="experiment", epochs=50, imgsz=640, iou=0.5):
+def train_YOLO(yaml_path, model="yolov8n.pt", savepath="data/out/yolo_runs", name="experiment", epochs=50, imgsz=640, iou=0.5):
     """_summary_
 
     Args:
-        test_imgs_path (_type_): should be a list of path to images we not trained with
-        model (str, optional): _description_. Defaults to "yolov8n.pt".
-        yaml_path (str, optional): _description_. Defaults to "data/in/yolo_dataset_pack/dataset.yaml".
-        savepath (str, optional): _description_. Defaults to "files/yolo".
-        name (str, optional): _description_. Defaults to "experiment".
-        epochs (int, optional): _description_. Defaults to 50.
+        yaml_path (str, optional): the yaml file of the dataset
+        model (str, optional): yolo model. Defaults to "yolov8n.pt".
+        savepath (str, optional): the folder  in which we save results. Defaults to "files/yolo".
+        name (str, optional): name of the folder. Defaults to "experiment".
+        epochs (int, optional): Defaults to 50.
         imgsz (int, optional): _description_. Defaults to 640.
         iou (float, optional): _description_. Defaults to 0.5.
     """
     model = YOLO(model)
-    model.train(data=yaml_path, project=savepath, name=name,
-                epochs=epochs, imgsz=imgsz, iou=iou)
-    # model = YOLO("/home/gu/Gubo-kit/files/yolo/experiment/weights/best.pt") 
-    for img_path in test_imgs_path:
-        result = model(img_path)
-        result[0].show()
-        input(">>>")
+    model.train(data=yaml_path, project=savepath, name=name, epochs=epochs, imgsz=imgsz, iou=iou) 
 
 def test_YOLO_folder(yolo_model, foldername):
+    ans = ''
     for f in os.listdir(foldername):
         frame = cv2.imread(os.path.join(foldername, f))
-        results = yolo_model.predict(frame, verbose=True)
-        cv2.imshow("Prediction", results[0].plot())
-        cv2.waitKey(0)
+        results = yolo_model.predict(frame, verbose=False)
+        for box in results[0].boxes:
+            label = int(box.cls[0])
+            color =  (label*255, 0, 0)
+            x_min, y_min, x_max, y_max =  map(int, box.xyxy[0].cpu().numpy())
+            cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), color=color, thickness=2)
+        cv2.imshow("Prediction", frame)
+        ans = chr(cv2.waitKey(0) & 0xFF)
+        if ans == 'q':
+            print("quitting...")
+            break
 
 def test_YOLO_camera(yolo_model, camera):
     ans = ''

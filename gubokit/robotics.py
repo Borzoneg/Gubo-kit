@@ -385,6 +385,7 @@ class Robot(RTDEControlInterface, RTDEIOInterface, RTDEReceiveInterface):
         self.moveL(np.add(obj_pose, np.array([0, 0, 0.1, 0, 0, 0])), 0.1, 0.3)
         self.moveUntilContact([0, 0, -0.100, 0, 0, 0])
         time.sleep(0.2)
+        self.move_up(-0.005)
         self.close_gripper()
         self.move_up(0.2, speed=0.25)
 
