@@ -329,22 +329,24 @@ def collect_photos_at_pose(camera: RealSenseCamera, robot: Robot, foldername="pi
                 i += 1
                 # cv2.waitKey(0)
 
+def extract_bb_from_img(img, bb):
+    x_min, y_min, x_max, y_max = bb
+    return img[y_min:y_max, x_min:x_max]
+
 if __name__ == "__main__":
-    R = sm.SO3([[-0.003768884463184431, -0.9999801870110973700,  0.0050419336721138118], 
-        [0.9999374423980765800, -0.0038217260702308998, -0.0105121691499708400], 
-        [0.0105312297618392200,  0.0050019991098505349,  0.9999320342926355500]])
-    t = np.array([0.051939876523448010, -0.0323596382860819900,  0.0211982932413351600])
-    camera_Ext = sm.SE3.Rt(R, t)
-    home_pos = [0.5599642992019653, -1.6431008778014125, 1.8597601095782679, -1.7663117847838343, -1.5613859335528772, -1.4]
-    ip = "192.168.1.100"
-
-    camera = RealSenseCamera(extrinsic=camera_Ext, enabled_strams={'color': [1920, 1080], 'depth': [640, 480]}) # 'infrared': [640, 480]
-    # robot = Robot(ip=ip, home_jpos=home_pos)
-    # gripper = VacuumGripper(robot, 0)
-    # robot.add_gripper(gripper=gripper)
-    # robot.move_to_home()
-
-    packs_yolo_model = YOLO("data/packs_best_model.pt")
-    cells_yolo_model = YOLO("data/cells_best_model.pt")
-
-    test_YOLO_camera(cells_yolo_model, camera=camera)    
+    cells_yolo_model = YOLO("/home/gu/fluently_ws/fluently_mem/data/cells_best_model.pt")
+    idx = 0
+    for f in os.listdir('/home/gu/Desktop/cells'):
+        print(f)
+        img = cv2.imread(f'/home/gu/Desktop/cells/{f}')
+        # cv2.destroyAllWindows()
+        # cv2.imshow(f"{f}", img)
+        # cv2.waitKey(0)
+        result = cells_yolo_model.predict(img)
+        for i, box in enumerate(result[0].boxes):
+            bb = box.xyxy[0].int().tolist()
+            close_up = extract_bb_from_img(img, bb)
+            cv2.imwrite(f'/home/gu/Desktop/cells/close_ups/pic{idx:02d}.png', close_up)
+            idx += 1
+            # cv2.imshow(f"{f} : box {i}", close_up)
+            # cv2.waitKey(0)

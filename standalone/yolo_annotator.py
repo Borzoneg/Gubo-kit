@@ -143,13 +143,13 @@ class MemGui(tk.Tk):
         self.bb_drawer = _BoundingBoxEditor(self.home_frame.canvas, self.home_frame)
         
         self.select_label()
-        self.import_model()
-        self.save_foldername()
 
-        self.img = cv2.imread(os.path.join(self.foldername, f'pic{self.idx:02d}.png'))
-        self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
-        self.img = PIL.Image.fromarray(self.img)
-        self.classify_and_draw(self.img)
+        try:
+            self.import_model()
+            self.save_foldername()
+            self.classify_and_draw(self.img)
+        except:
+            print("Cant open image or find model, check paths")
         os.makedirs(os.path.join('yolo_annotator', 'label'), exist_ok=True)
         os.makedirs(os.path.join('yolo_annotator', 'imgs'), exist_ok=True)
 
@@ -190,7 +190,7 @@ class MemGui(tk.Tk):
         self.folder_label = tk.Label(self.bot_frame, text="Folder:")
         self.folder_label.grid(row=1, column=0, sticky='nsew')
         self.folder_entry = tk.Entry(self.bot_frame, textvariable=self.foldername)
-        self.folder_entry.insert(0, '/home/gu/fluently_ws/fluently_mem/data/pics_18650')
+        self.folder_entry.insert(0, '/home/gu/Desktop/cells')
         self.folder_entry.grid(row=1, column=1, sticky='nsew')
         self.folder_btn = tk.Button(self.bot_frame, text='Confirm', command=self.save_foldername)
         self.folder_btn.grid(row=1, column=2, sticky='nsew')
@@ -214,9 +214,14 @@ class MemGui(tk.Tk):
     def save_foldername(self):
         self.idx = 0
         self.foldername = self.folder_entry.get()
+        self.img = cv2.imread(os.path.join(self.foldername, f'pic{self.idx:02d}.png'))
+        self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
+        self.img = PIL.Image.fromarray(self.img)
+        self.classify_and_draw(self.img)
 
     def import_model(self):
         self.model = YOLO(self.model_entry.get())
+        self.classify_and_draw(self.img)
 
     def add_bb(self):
         x, y = self.home_frame.canvas.winfo_width() // 2, self.home_frame.canvas.winfo_height() // 2
@@ -252,8 +257,11 @@ class MemGui(tk.Tk):
         self.img = PIL.Image.fromarray(self.img)
 
     def after_update(self):
-        scale, padx, pady = self.home_frame.draw_image(self.img)
-        self.bb_drawer.draw_boxes(scale=scale, padx=padx, pady=pady)
+        try:
+            scale, padx, pady = self.home_frame.draw_image(self.img)
+            self.bb_drawer.draw_boxes(scale=scale, padx=padx, pady=pady)
+        except AttributeError:
+            pass
         self.after(1, self.after_update)
 
 class HomeScreen(tk.Frame):
@@ -298,10 +306,10 @@ def check_yolo_annotation(foldername):
         cv2.waitKey(0)
 
 if __name__ == "__main__":
-    # app = MemGui()
-    # app.after(1, app.after_update)
-    check_yolo_annotation('18650')
-    # app.mainloop()
+    app = MemGui()
+    app.after(1, app.after_update)
+    app.mainloop()
+    # check_yolo_annotation('18650')
     # img = cv2.imread("yolo_annotator/imgs/pic00.png")
     # cv2.circle(img, (2811 ,249), radius=66, color=(0,0,0))
     # cv2.imshow("img", img)
