@@ -346,8 +346,8 @@ class CustomConvNeuralNet:
     def __init__(self, n_classes: int):
         self.transform = T.Compose([
         T.ToTensor(),
-        T.Resize((224, 224)),
-        T.Normalize(mean=[0.485, 0.456, 0.406],
+        T.Resize((224, 224)),                       # these numbers come from the fact that the resnet18 model come pretrained, we 
+        T.Normalize(mean=[0.485, 0.456, 0.406],     # resize and normalize based on that dataset
                     std=[0.229, 0.224, 0.225]),
         ])
 
@@ -452,56 +452,6 @@ class CustomConvNeuralNet:
                 cv2.imshow(f"Prediction", img)
                 cv2.waitKey(0)
         return predicted
-
-def train_resnet(dataset_path):
-    transform = T.Compose([
-    T.Resize((224, 224)),
-    T.ToTensor(),
-    T.Normalize(mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]),
-    ])
-    
-    train_ds = ImageFolder(os.path.join(dataset_path, "train"), transform=transform)
-    val_ds = ImageFolder(os.path.join(dataset_path, "val"), transform=transform)
-    print(train_ds.classes)
-    print(train_ds.class_to_idx)
-
-    train_loader = DataLoader(train_ds, batch_size=32, shuffle=True)
-    val_loader = DataLoader(val_ds, batch_size=32)
-
-    model = resnet18(pretrained=True)
-    model.fc = nn.Linear(model.fc.in_features, 2)  # 2 classes: ok, ko
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = model.to(device)
-
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-
-    num_epochs = 10
-
-    for epoch in range(num_epochs):
-        model.train()
-        total_loss, correct, total = 0, 0, 0
-        for imgs, labels in train_loader:
-            imgs, labels = imgs.to(device), labels.to(device)
-
-            outputs = model(imgs)
-            loss = criterion(outputs, labels)
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            total_loss += loss.item()
-            preds = outputs.argmax(1)
-            correct += (preds == labels).sum().item()
-            total += labels.size(0)
-
-        acc = correct / total
-        print(f"Epoch {epoch+1}: Loss = {total_loss:.4f}, Accuracy = {acc:.4f}")
-
-        torch.save(model.state_dict(), "cell_classifier.pth")
 
 def annotate_classifier(folder_path, classes: list[str]):
     for cls in classes:
