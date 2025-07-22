@@ -357,6 +357,8 @@ class CustomConvNeuralNet:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
 
+        self.idx_to_class = None
+
     def train(self, dataset_path, epochs=10):
         """train a resnet18 for the number of classes specified in the init, the folder structure must be
         dataset_path/
@@ -425,8 +427,9 @@ class CustomConvNeuralNet:
             val_acc = running_correct / len(val_loader.dataset)
 
             print(f"Epoch {epoch+1:02d}: Train[loss = {train_loss:.4f}, Accuracy = {train_acc:.4f}]; Valid[loss = {val_loss:.4f}, Accuracy = {val_acc:.4f}]")
-
-        torch.save(self.model.state_dict(), "model_resnet18.pth")
+        
+        self.idx_to_class = idx_to_class = {v: k for k, v in train_ds.class_to_idx.items()}
+        torch.save({'model_state_dict': self.model.state_dict(), 'idx_to_class': self.idx_to_class}, "model_resnet18.pth")
         print("Model saved as: ./model_resnet18.pth")
 
     def test_on_folder(self, folder_path):
@@ -435,8 +438,10 @@ class CustomConvNeuralNet:
                 img = cv2.imread(os.path.join(dirpath, imgf))
                 qual_cnn.predict_img(img, show=True)
 
-    def load_weigths(self, modelpath):
-        self.model.load_state_dict(torch.load(modelpath, map_location=self.device))
+    def load_model(self, modelpath):
+        checkpoint = torch.load(modelpath, map_location=self.device)
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.idx_to_class = checkpoint['idx_to_class']
     
     def predict_img(self, img, show=False):
         self.model.eval()
@@ -448,7 +453,7 @@ class CustomConvNeuralNet:
             output = self.model(img_tensor)
             predicted = output.argmax(1).item()
             if show:
-                cv2.putText(img, f"{predicted}", (img.shape[1]//2-5, img.shape[0]//2-5), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.8, color=(0,0,0), thickness=2)
+                cv2.putText(img, f"{self.idx_to_class[predicted]}", (img.shape[1]//2-5, img.shape[0]//2-5), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.8, color=(0,0,0), thickness=2)
                 cv2.imshow(f"Prediction", img)
                 cv2.waitKey(0)
         return predicted
@@ -472,7 +477,7 @@ def annotate_classifier(folder_path, classes: list[str]):
 if __name__ == "__main__":
     folder_path = '/home/gu/fluently_ws/fluently_mem/data/close_ups'
     qual_cnn = CustomConvNeuralNet(n_classes=2)
-    qual_cnn.load_weigths('/home/gu/fluently_ws/fluently_mem/data/cell_qual_classifier.pth')
+    qual_cnn.load_model('model_resnet18.pth')
     # qual_cnn.train(folder_path)
     qual_cnn.test_on_folder(folder_path)
 
