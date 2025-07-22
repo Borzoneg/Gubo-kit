@@ -16,8 +16,9 @@ from ultralytics import YOLO
 import re
 import torchvision.transforms as T
 import cv2.aruco as aruco
+import torchvision
 from torchvision.datasets import ImageFolder
-from torchvision.models import resnet18
+from torchvision.models import resnet18, ResNet
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch
@@ -341,6 +342,117 @@ def extract_bb_from_img(img, bb):
     x_min, y_min, x_max, y_max = bb
     return img[y_min:y_max, x_min:x_max]
 
+class CustomConvNeuralNet:
+    def __init__(self, n_classes: int):
+        self.transform = T.Compose([
+        T.ToTensor(),
+        T.Resize((224, 224)),
+        T.Normalize(mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]),
+        ])
+
+        self.model = resnet18(weights='ResNet18_Weights.DEFAULT')
+        self.model.fc = nn.Linear(self.model.fc.in_features, n_classes)  # 2 classes: ok, ko
+        
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.model.to(self.device)
+
+    def train(self, dataset_path, epochs=10):
+        """train a resnet18 for the number of classes specified in the init, the folder structure must be
+        dataset_path/
+            ├── train/
+            │   ├── class0
+            │   ├── ...
+            │   └── classn
+            └── val/
+            │   ├── class0
+            │   ├── ...
+            │   └── classn
+            └── test/ (optional for testing later)
+                ├── class0
+                ├── ...
+                └── classn
+            
+
+        Args:
+            dataset_path (_type_): path to root of dataset
+            epochs (int, optional): Defaults to 10.
+        """
+        train_ds = ImageFolder(os.path.join(dataset_path, "train"), transform=self.transform)
+        val_ds = ImageFolder(os.path.join(dataset_path, "val"), transform=self.transform)
+        train_loader = DataLoader(train_ds, batch_size=32, shuffle=True)
+        val_loader = DataLoader(val_ds, batch_size=32)
+
+        criterion=nn.CrossEntropyLoss()
+        optimizer=torch.optim.Adam(self.model.parameters(), lr=1e-4)
+
+        for epoch in range(epochs):
+            self.model.train()
+            running_loss, running_correct, total = 0, 0, 0
+            for imgs, labels in train_loader:
+                imgs, labels = imgs.to(self.device), labels.to(self.device)
+
+                outputs = self.model(imgs)
+                loss = criterion(outputs, labels)
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                preds = outputs.argmax(1)
+                running_loss += loss.item()
+                running_correct += (preds == labels).sum().item()
+            
+            train_loss = running_loss / len(train_loader.dataset)
+            train_acc = running_correct / len(train_loader.dataset)
+
+            self.model.eval()
+            running_loss = 0.0
+            running_correct = 0
+            with torch.no_grad():
+                for imgs, labels in val_loader:
+                    imgs = imgs.to(self.device)
+                    labels = labels.to(self.device)
+
+                    outputs = self.model(imgs)
+                    _, preds = torch.max(outputs, 1)
+                    loss = criterion(outputs, labels)
+
+                    running_loss += loss.item() * imgs.size(0)
+                    running_correct += torch.sum(preds == labels.data)
+            
+            val_loss = running_loss / len(val_loader.dataset)
+            val_acc = running_correct / len(val_loader.dataset)
+
+            print(f"Epoch {epoch+1:02d}: Train[loss = {train_loss:.4f}, Accuracy = {train_acc:.4f}]; Valid[loss = {val_loss:.4f}, Accuracy = {val_acc:.4f}]")
+
+        torch.save(self.model.state_dict(), "model_resnet18.pth")
+        print("Model saved as: ./model_resnet18.pth")
+
+    def test_on_folder(self, folder_path):
+        for dirpath, _, filenames in os.walk(os.path.join(folder_path, 'test')):
+            for imgf in filenames:
+                img = cv2.imread(os.path.join(dirpath, imgf))
+                qual_cnn.predict_img(img, show=True)
+
+    def load_weigths(self, modelpath):
+        self.model.load_state_dict(torch.load(modelpath, map_location=self.device))
+    
+    def predict_img(self, img, show=False):
+        self.model.eval()
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img_tensor = torch.from_numpy(img)
+        img_tensor = self.transform(img)
+        img_tensor = img_tensor.unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            output = self.model(img_tensor)
+            predicted = output.argmax(1).item()
+            if show:
+                cv2.putText(img, f"{predicted}", (img.shape[1]//2-5, img.shape[0]//2-5), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.8, color=(0,0,0), thickness=2)
+                cv2.imshow(f"Prediction", img)
+                cv2.waitKey(0)
+        return predicted
+
 def train_resnet(dataset_path):
     transform = T.Compose([
     T.Resize((224, 224)),
@@ -409,34 +521,8 @@ def annotate_classifier(folder_path, classes: list[str]):
 
 if __name__ == "__main__":
     folder_path = '/home/gu/fluently_ws/fluently_mem/data/close_ups'
-    # annotate_classifier(folder_path=folder_path, classes=['asd', 'qwe'])
-    # train_resnet(folder_path)
+    qual_cnn = CustomConvNeuralNet(n_classes=2)
+    qual_cnn.load_weigths('/home/gu/fluently_ws/fluently_mem/data/cell_qual_classifier.pth')
+    # qual_cnn.train(folder_path)
+    qual_cnn.test_on_folder(folder_path)
 
-    # Define device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    model = resnet18(pretrained=False)
-    model.fc = nn.Linear(model.fc.in_features, 2)  # binary: ok vs ko
-    model = model.to(device)
-    model.load_state_dict(torch.load('cell_classifier.pth', map_location=device))
-    model.eval()
-    
-    transform = T.Compose([
-    T.ToTensor(),
-    T.Resize((224, 224)),
-    T.Normalize(mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]),
-    ])
-
-    for dirpath, dirnames, filenames in os.walk(os.path.join(folder_path, 'test')):
-        for imgf in filenames:
-            print(os.path.join(dirpath, imgf))
-            img = cv2.imread(os.path.join(dirpath, imgf))
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img_tensor = transform(img).unsqueeze(0).to(device)
-            with torch.no_grad():
-                output = model(img_tensor)
-                predicted = output.argmax(1).item()
-                cv2.imshow("img", img)
-                print(f"predicted: {predicted}")
-                cv2.waitKey(0)
