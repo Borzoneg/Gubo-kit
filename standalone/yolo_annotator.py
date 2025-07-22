@@ -222,11 +222,9 @@ class YOLOAnnotator(tk.Tk):
         self.img = cv2.imread(os.path.join(self.foldername, f'pic{self.idx:02d}.png'))
         self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
         self.img = PIL.Image.fromarray(self.img)
-        self.classify_and_draw(self.img)
 
     def import_model(self):
         self.model = YOLO(self.model_entry.get())
-        self.classify_and_draw(self.img)
 
     def add_bb(self):
         x, y = self.home_frame.canvas.winfo_width() // 2, self.home_frame.canvas.winfo_height() // 2
@@ -318,7 +316,7 @@ def check_yolo_annotation(foldername):
         cv2.waitKey(0)
 
 if __name__ == "__main__":
-    app = YOLOAnnotator(default_foldername='/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_cell/images/train', default_modelpath='/home/gu/fluently_ws/fluently_mem/data/cells_best_model.pt', default_label='0')
+    app = YOLOAnnotator(default_foldername='/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_pack', default_modelpath='/home/gu/fluently_ws/fluently_mem/data/packs_best_model.pt', default_label='0')
     app.after(1, app.after_update)
     app.mainloop()
     # check_yolo_annotation('yolo_annotator')
