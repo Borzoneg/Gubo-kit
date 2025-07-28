@@ -104,7 +104,7 @@ class VoiceModule():
             if play_audio:
                 sounddevice.play((audio_np * 32768).astype(np.int16), samplerate=self.samplerate) # to listen back top what the module heard
                 sounddevice.wait() # the play is non-blocking, the buffer is always 2 seconds (with vosk is real time) so we need this wait to listen back
-            result = self.whisper.transcribe(audio_np, fp16=False)
+            result = self.whisper.transcribe(audio_np, fp16=False, language='en')
             # self.logger.debug(result)
             if len(result.get('segments')) > 0:
                 no_speech_prob = result.get('segments')[0].get("no_speech_prob", 1)
