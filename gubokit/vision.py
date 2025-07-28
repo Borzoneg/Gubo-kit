@@ -296,7 +296,8 @@ def train_YOLO(yaml_path, model="yolov8n.pt", savepath="data/out/yolo_runs", nam
         iou (float, optional): _description_. Defaults to 0.5.
     """
     model = YOLO(model)
-    model.train(data=yaml_path, project=savepath, name=name, epochs=epochs, imgsz=imgsz, iou=iou) 
+    model.train(data=yaml_path, project=savepath, name=name, epochs=epochs, imgsz=imgsz, iou=iou)
+    return model
 
 def test_YOLO_folder(yolo_model, foldername):
     ans = ''
@@ -476,8 +477,6 @@ def annotate_classifier(folder_path, classes: list[str]):
 
 if __name__ == "__main__":
     folder_path = '/home/gu/fluently_ws/fluently_mem/data/close_ups'
-    qual_cnn = CustomConvNeuralNet(n_classes=2)
-    qual_cnn.load_model('model_resnet18.pth')
-    # qual_cnn.train(folder_path)
-    qual_cnn.test_on_folder(folder_path)
+    model = train_YOLO('/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_pack/dataset.yaml')
+    test_YOLO_folder(model, '/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_pack/images/test')
 

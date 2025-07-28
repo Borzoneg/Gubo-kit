@@ -102,7 +102,6 @@ class _BoundingBoxEditor:
                 elif item == delete_handle: # if clicked on close button, remove bb
                     if len(self.bbs_position) > 1:
                         self.bbs_position.pop(i)
-                        self.draw_boxes()
                         break
                        
     def on_drag(self, event):
@@ -127,7 +126,6 @@ class _BoundingBoxEditor:
 
         self.start_x = event.x
         self.start_y = event.y
-        self.draw_boxes()
 
     def on_release(self, event):
         """Resets after dragging"""
@@ -139,6 +137,7 @@ class YOLOAnnotator(tk.Tk):
         super().__init__()
         self.idx = 0
         self.foldername = ''
+        self.filenames = []
 
         self.default_foldername = default_foldername
         self.default_modelpath = default_modelpath
@@ -219,7 +218,9 @@ class YOLOAnnotator(tk.Tk):
     def save_foldername(self):
         self.idx = 0
         self.foldername = self.folder_entry.get()
-        self.img = cv2.imread(os.path.join(self.foldername, f'pic{self.idx:02d}.png'))
+        self.filenames = os.listdir(self.foldername)
+        filename = self.filenames.pop(0)
+        self.img = cv2.imread(os.path.join(self.foldername, filename))
         self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
         self.img = PIL.Image.fromarray(self.img)
 
@@ -256,12 +257,16 @@ class YOLOAnnotator(tk.Tk):
     def next(self):
         self.save_current_photo()
         self.idx += 1
-        print(f"idx: {self.idx}")
+        print(f"idx: {self.idx}", end='\r')
         self.bb_drawer = _BoundingBoxEditor(self.home_frame.canvas, self.home_frame)
-        self.img = cv2.imread(os.path.join(self.foldername, f'pic{self.idx:02d}.png'))
-        self.classify_and_draw(self.img)
-        self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
-        self.img = PIL.Image.fromarray(self.img)
+        try:
+            filename = self.filenames.pop(0)
+            self.img = cv2.imread(os.path.join(self.foldername, filename))
+            self.classify_and_draw(self.img)
+            self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
+            self.img = PIL.Image.fromarray(self.img)
+        except IndexError:
+            print("No files left!!!")
 
     def after_update(self):
         try:
@@ -316,7 +321,8 @@ def check_yolo_annotation(foldername):
         cv2.waitKey(0)
 
 if __name__ == "__main__":
-    app = YOLOAnnotator(default_foldername='/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_pack', default_modelpath='/home/gu/fluently_ws/fluently_mem/data/packs_best_model.pt', default_label='0')
+    app = YOLOAnnotator(default_foldername='/home/gu/fluently_ws/fluently_mem/data/pics_trapezoid', default_modelpath='/home/gu/fluently_ws/fluently_mem/data/packs_best_model.pt', default_label='0')
+    print(app.model.names)
     app.after(1, app.after_update)
     app.mainloop()
     # check_yolo_annotation('yolo_annotator')
