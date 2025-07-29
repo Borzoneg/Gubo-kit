@@ -655,6 +655,11 @@ class YOLOAnnotator(tk.Tk):
             return scale, padx, pady
 
 def check_yolo_annotation(foldername):
+    """form a yolo formatted folder, go through the files and visually see the labels on the image useful to check that the data are correct
+
+    Args:
+        foldername (_type_): _description_
+    """
     for f in os.listdir(os.path.join(foldername, 'imgs')):
         img_file_path = (os.path.join(foldername, 'imgs', f))
         label_file_path = (os.path.join(foldername, 'label', f.replace('png', 'txt')))
@@ -676,8 +681,6 @@ def check_yolo_annotation(foldername):
         cv2.waitKey(0)
 
 if __name__ == "__main__":
-    # folder_path = '/home/gu/fluently_ws/fluently_mem/data/close_ups'
-    # model = train_YOLO('/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_pack/dataset.yaml')
-    # test_YOLO_folder(model, '/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_pack/images/test')
-    yo = YOLOAnnotator(default_foldername='/home/gu/fluently_ws/fluently_mem/data/pics_trapezoid', default_modelpath='/home/gu/fluently_ws/fluently_mem/data/packs_best_model.pt', default_label='0')
-    yo.start()
+    folder_path = '/home/gu/fluently_ws/fluently_mem/data/close_ups'
+    model = train_YOLO('/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_pack/dataset.yaml')
+    test_YOLO_folder(model, '/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_pack/images/test')
