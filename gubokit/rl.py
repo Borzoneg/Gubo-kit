@@ -279,4 +279,4 @@ def ant_mojoco():
     env.close()
 
 if __name__ == "__main__":
-    blackjack_tutorial()
+    ant_mojoco()
