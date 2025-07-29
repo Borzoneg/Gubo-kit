@@ -2,7 +2,7 @@ import mujoco
 import mujoco.viewer
 from mujoco import MjModel, MjData
 
-model = MjModel.from_xml_path("/home/gu/mujoco-3.3.2/model/humanoid/humanoid.xml")
+model = MjModel.from_xml_path("/home/gu/mujoco210/model/loop.xml")
 data = MjData(model)
 
 with mujoco.viewer.launch_passive(model, data) as viewer:
