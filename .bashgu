@@ -34,6 +34,8 @@ alias isaac="cd $ISAACPATH && ./isaac-sim.sh"
 alias blender="cd $HOME/blender-4.4.3-linux-x64 && ./blender"
 
 alias fluently_thrift="cd $HOME/fluently_ws && ./hfc-thrift/bin/startServer.sh -p 7070 fluently_ontology/fluently.yml"
+alias mem_thrift="cd $HOME/fluently_ws && hfc-thrift/bin/run_server -p 7070 fluently-sdu/src/main/resources/ontology/fluently.yml"
+
 
 git_paths=(
           "$HOME/knowledge-transfer-fleuntly"

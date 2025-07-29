@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 
 
-class _BoundingBoxEditor:
+class BoundingBoxEditor:
     def __init__(self, canvas, frame, tag='', move_color='blue'):
         self.canvas = canvas
         self.selected_box = None
@@ -125,7 +125,7 @@ class _BoundingBoxEditor:
         self.selected_box = None
         self.dragging = None
 
-class _QualitiesEditor:
+class QualitiesEditor:
     def __init__(self, canvas, cell_m_q,  cell_h_q, editable=True):
         self.canvas = canvas
         self.bbs_position = []
