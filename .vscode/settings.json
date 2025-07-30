@@ -3,5 +3,5 @@
         "$HOME/Gubo-kit",
         "$HOME/pyenv/lib/python3.12/site-packages",
     ],
-    "cmake.ignoreCMakeListsMissing": true
+    "cmake.ignoreCMakeListsMissing": true,
 }
