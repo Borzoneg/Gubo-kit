@@ -681,6 +681,15 @@ def check_yolo_annotation(foldername):
         cv2.waitKey(0)
 
 if __name__ == "__main__":
-    folder_path = '/home/gu/fluently_ws/fluently_mem/data/close_ups'
-    model = train_YOLO('/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_pack/dataset.yaml')
-    test_YOLO_folder(model, '/home/gu/fluently_ws/fluently_mem/data/yolo_dataset_pack/images/test')
+    R = sm.SO3([[-0.003768884463184431, -0.9999801870110973700,  0.0050419336721138118], 
+        [0.9999374423980765800, -0.0038217260702308998, -0.0105121691499708400], 
+        [0.0105312297618392200,  0.0050019991098505349,  0.9999320342926355500]])
+    t = np.array([0.051939876523448010, -0.0323596382860819900,  0.0211982932413351600])
+    camera_Ext = sm.SE3.Rt(R, t)
+    camera = RealSenseCamera(   extrinsic=camera_Ext,
+                                enabled_strams={
+                                'color': [1920, 1080],
+                                'depth': [640, 480],
+                                })
+    model = YOLO('/home/fluently/fluently_mem/data/packs_best_model.pt')
+    test_YOLO_camera(model, camera)
