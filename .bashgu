@@ -43,6 +43,7 @@ git_paths=(
           "$HOME/fluently_ws/fluently_mem"
           "$HOME/fluently_ws/ros/supsi-pa"
           "$HOME/Project_cdt"
+          "$HOME/fluently_ws/fluently_bernd"
           )
 
 isaac_py(){
