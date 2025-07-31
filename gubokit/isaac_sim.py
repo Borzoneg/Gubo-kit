@@ -888,10 +888,10 @@ class SimRobot(Robot):
 class BasicSetup(Node):
     """This is just a basic node that opens a scene and setup the environment, copy and paste this for future projects
     not usable as a class in other prjects
-    Use this to start isaac sim
-    # import omni
-    # from omni.isaac.kit import SimulationApp
-    # simulation_app = SimulationApp({"headless": False, "window_width": 2000, "window_height":1500})
+    Use this to start isaac sim:
+                                # import omni
+                                # from omni.isaac.kit import SimulationApp
+                                # simulation_app = SimulationApp({"headless": False, "window_width": 2000, "window_height":1500})
     """
     def __init__(self):
         # 
