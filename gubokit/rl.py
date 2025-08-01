@@ -4,9 +4,12 @@ import mujoco
 import mujoco.viewer
 import mediapy as media
 import cv2
+from gymnasium.wrappers import RecordEpisodeStatistics, RecordVideo
+import tqdm
+import argparse
 
-class MujocoCube(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array", ], "render_fps": 30}
+class MujocoCubeEnv(gym.Env):
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
     def __init__(self, xspace: int=5.0, yspace: int=5.0, render_mode=None, mujoco_file: str=None):
         super().__init__()
         self.xspace = xspace
@@ -41,15 +44,21 @@ class MujocoCube(gym.Env):
             7: np.array([ 0,       step, 0]),   # Move up
             8: np.array([ 0,          0, step]),   # Jump TODO: implement a force
         }
-        self.mujoco_model = mujoco.MjModel.from_xml_path(mujoco_file)
-        self.mujoco_data = mujoco.MjData(self.mujoco_model)
-        self.mujoco_agentj = self.mujoco_model.joint("agentjoint").id
-        self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wallx1").id]] = [-(xspace+0.1), 0, 0] # 0.1=size of  agent
-        self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wallx2").id]] = [ (xspace+0.1), 0, 0]
-        self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wally1").id]] = [0, -(yspace+0.1), 0]
-        self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wally2").id]] = [0,  (yspace+0.1), 0]
-        self.mujoco_viewer = None # init in reset to have target in right position
-        self.mujoco_renderer = None # init in reset to have target in right position
+        if self.render_mode == "human" or self.render_mode == "rgb_array":
+            self.mujoco_model = mujoco.MjModel.from_xml_path(mujoco_file)
+            self.mujoco_data = mujoco.MjData(self.mujoco_model)
+            self.mujoco_agentj = self.mujoco_model.joint("agentjoint").id
+            self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wallx1").id]] = [-(xspace+0.1), 0, 0] # 0.1=size of  agent
+            self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wallx2").id]] = [ (xspace+0.1), 0, 0]
+            self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wally1").id]] = [0, -(yspace+0.1), 0]
+            self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wally2").id]] = [0,  (yspace+0.1), 0]
+            self.mujoco_viewer = None # init in reset to have target in right position
+            self.mujoco_renderer = None # init in reset to have target in right position
+            # self.mujoco_viewer = mujoco.viewer.launch_passive(self.mujoco_model, self.mujoco_data)
+            self.mujoco_cam = mujoco.MjvCamera()
+            mujoco.mjv_defaultCamera(self.mujoco_cam)
+            self.mujoco_cam.distance = 13
+            self.mujoco_renderer = mujoco.Renderer(self.mujoco_model, width=1280, height=720)
 
     def _get_obs(self):
         """Convert internal state to observation format.
@@ -89,19 +98,9 @@ class MujocoCube(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
 
-        if self.render_mode == "human":
+        if self.render_mode == "human" or self.render_mode == "rgb_array":
             self.mujoco_data.qpos[self.mujoco_agentj:self.mujoco_agentj+7] = np.hstack((self._agent_location, [1, 0, 0, 0]))
             self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("target").id]] = self._target_location
-            # self.mujoco_viewer = mujoco.viewer.launch_passive(self.mujoco_model, self.mujoco_data)
-            self.mujoco_cam = mujoco.MjvCamera()
-            mujoco.mjv_defaultCamera(self.mujoco_cam)
-            self.mujoco_cam.distance = 13
-            self.mujoco_renderer = mujoco.Renderer(self.mujoco_model, width=1280, height=720)
-            mujoco.mj_step(self.mujoco_model, self.mujoco_data)
-            self.mujoco_renderer.update_scene(self.mujoco_data, camera=self.mujoco_cam)
-            rendered_img = self.mujoco_renderer.render()
-            cv2.imshow("Render", rendered_img)
-            cv2.waitKey(0)
 
         return observation, info
     
@@ -116,12 +115,12 @@ class MujocoCube(gym.Env):
         """
         direction = self._action_to_direction[action]
         self._agent_location = np.clip(self._agent_location + direction, self.space_range_min, self.space_range_max)
-        
-        terminated = np.linalg.norm(self._agent_location[:2] - self._target_location[:2]) < 1e-2
+        distance = np.linalg.norm(self._agent_location[:2] - self._target_location[:2])
+        terminated = (distance < 1e-2)
 
         truncated = False
         
-        reward = 1 if terminated else 0 # TODO: code a proper one
+        reward = -distance
 
         observation = self._get_obs()
         info = self._get_info()
@@ -130,30 +129,56 @@ class MujocoCube(gym.Env):
 
     def render(self):
         """Render the environment for human viewing."""
-        if self.render_mode == "human":
+        if self.render_mode == "human" or self.render_mode == "rgb_array":
             self.mujoco_data.qpos[self.mujoco_agentj:self.mujoco_agentj+7] = np.hstack((self._agent_location, [1, 0, 0, 0]))
             mujoco.mj_step(self.mujoco_model, self.mujoco_data)
 
             # self.mujoco_viewer.sync()
             self.mujoco_renderer.update_scene(self.mujoco_data, camera=self.mujoco_cam)
             rendered_img = self.mujoco_renderer.render()
-            cv2.imshow("Render", rendered_img)
-            ans = chr(cv2.waitKey(1) & 0xff)
-            if ans == "q":
-                quit()
-
-def train_mujoco_cube():
-    gym.register(id="gymnasium_env/MujocoCube-v0", entry_point=MujocoCube, max_episode_steps=300)
-    env = gym.make("gymnasium_env/MujocoCube-v0", render_mode="human", xspace=5.0, yspace=5.0, mujoco_file="files/mujoco_files/MujocoCubeRL.xml")
-    print("Enter to start")
-    obs, info = env.reset(seed=42)
-    print(obs)
-    terminated = False
-    while not terminated:
-        action = env.action_space.sample()
-        obs, reward, terminated, truncated, info = env.step(action)
-        env.render()
-        # print(obs)
+            if self.render_mode == "rgb_array": # if rgb array we need to return an image
+                return rendered_img
+                # return cv2.cvtColor(rendered_img, cv2.COLOR_BGR2RGB)
+            else: # if human we want to show
+                cv2.imshow("Render", rendered_img)
+                ans = chr(cv2.waitKey(1) & 0xff)
+                if ans == "q":
+                    quit()
+            
+def train_mujoco_cube(render_mode):
+    render_interval = 2
+    num_training_episodes = 5
+    gym.register(id="gymnasium_env/MujocoCube-v0", entry_point=MujocoCubeEnv, max_episode_steps=300)
+    env = gym.make("gymnasium_env/MujocoCube-v0", render_mode=render_mode, xspace=5.0, yspace=5.0, mujoco_file="files/mujoco_files/MujocoCubeRL.xml")
+    if render_mode == "rgb_array":
+        env = RecordVideo(
+            env,
+            video_folder="data/out/mujoco_cube",
+            name_prefix="training",
+            episode_trigger=lambda x: x % render_interval == 0  # Only record every 250th episode
+        )
+    env = RecordEpisodeStatistics(env)
+    for i in range(num_training_episodes):
+        obs, info = env.reset(seed=42)
+        print(f"{i} ep: starting: {obs}")
+        ep_over = False
+        while not ep_over:
+            action = env.action_space.sample()
+            obs, reward, terminated, truncated, info = env.step(i)
+            ep_over = terminated or truncated
+            if render_mode == "human":
+                env.render()
+    env.close()
 
 if __name__ == "__main__":
-    train_mujoco_cube()
+    parser = argparse.ArgumentParser(description="Set render mode")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-u', action='store_const', const='human', dest='render_mode', help='Render mode: human')
+    group.add_argument('-r', action='store_const', const='rgb_array', dest='render_mode', help='Render mode: rgb_array')
+    group.add_argument('-t', action='store_const', const='text', dest='render_mode', help='Render mode: text')
+
+    parser.set_defaults(render_mode='human')
+
+    args = parser.parse_args()
+    print(f"Render mode is: {args.render_mode}")
+    train_mujoco_cube(args.render_mode)
