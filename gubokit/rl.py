@@ -159,8 +159,9 @@ def train_mujoco_cube(render_mode):
         )
     env = RecordEpisodeStatistics(env)
     for i in range(num_training_episodes):
-        obs, info = env.reset(seed=42)
-        print(f"{i} ep: starting: {obs}")
+        obs, info = env.reset()
+        print(f"=====Episode {i:02d}=====")
+        print(f"starting with: {obs}")
         ep_over = False
         while not ep_over:
             action = env.action_space.sample()
@@ -168,6 +169,7 @@ def train_mujoco_cube(render_mode):
             ep_over = terminated or truncated
             if render_mode == "human":
                 env.render()
+        print(f"finished with: {info}")
     env.close()
 
 if __name__ == "__main__":
