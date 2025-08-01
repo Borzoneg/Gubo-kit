@@ -1,44 +1,55 @@
 <mujoco model="moveable_env" >
-  <compiler angle="degree" coordinate="local" />
-  <option gravity="0 0 -9.81" />
+    <asset>
+        <texture name="grid" type="2d" builtin="checker" rgb1=".1 .2 .3"
+        rgb2=".2 .3 .4" width="300" height="300" mark="edge" markrgb=".2 .3 .4"/>
+        <material name="grid" texture="grid" texrepeat="2 2" texuniform="true"
+        reflectance="0"/>
+    </asset>
+    <compiler angle="degree" coordinate="local" />
+    <option gravity="0 0 -9.81" />
 
-  <size njmax="1000" nconmax="100" />
+    <size njmax="1000" nconmax="100" />
 
-  <!-- Floor grid, fixed -->
-  <worldbody>
-    <body name="floor" pos="0 0 0">
-      <geom name="floor_geom" type="plane" size="5 5 0.1" rgba="0.7 0.7 0.7 1"/>
-    </body>
+    <visual>
+        <global offwidth="1920"/>
+    </visual>
+    <visual>
+        <global offheight="1080"/>
+    </visual>
 
-    <!-- Free moving cube -->
-    <body name="agent" pos="0 0 0.2">
-      <freejoint />
-      <geom type="box" size="0.1 0.1 0.1" rgba="0.8 0.1 0.1 1"/>
-      <inertial pos="0 0 0" mass="1" diaginertia="0.01 0.01 0.01"/>
-    </body>
+    <worldbody>
+        <geom name="ground" type="plane" pos="0 0 0" size="10 10 .1" material="grid"/>
+        <camera name="top" pos="0 -20 18" euler="45 0 0"/>
 
-    <!-- Target, fixed in place -->
-    <body name="target" pos="0 0 0.05">
-      <geom type="box" size="0.2 0.2 0.01" rgba="0 1 0 1" contype="0" conaffinity="0"/> 
-      <!-- contype/conaffinity=0 disables collision -->
-    </body>
+        <!-- Free moving cube -->
+        <body name="agent" pos="0 0 0.1">
+            <freejoint name="agentjoint" />
+            <geom type="box" size="0.1 0.1 0.1" rgba="0.8 0.1 0.1 1"/>
+            <inertial pos="0 0 0" mass="1" diaginertia="0.01 0.01 0.01"/>
+        </body>
 
-    <!-- Four movable walls -->
-    <body name="wally1" pos="0 -2 0.5">
-      <geom type="box" size="10 0.1 1" rgba="0.2 0.2 0.8 1"/>
-    </body>
-    <body name="wally2" pos="0 2 0.5">
-      <geom type="box" size="10 0.1 1" rgba="0.2 0.2 0.8 1"/>
-    </body>
-    <body name="wallx1" pos="-2 0 0.5">
-      <geom type="box" size="0.1 10 1" rgba="0.2 0.2 0.8 1"/>
-    </body>
-    <body name="wallx2" pos="2 0 0.5">
-      <geom type="box" size="0.1 10 1" rgba="0.2 0.2 0.8 1"/>
-    </body>
-  </worldbody>
 
-  <actuator>
-    <!-- actuators can be added here if needed -->
-  </actuator>
-</mujoco>
+        <!-- Target -->
+        <body name="target" mocap="true" pos="0 0 0.01">
+            <geom type="box" size="0.2 0.2 0.01" rgba="0 1 0 1"/> 
+        </body>
+
+        <!-- Four movable walls -->
+        <body name="wally1" mocap="true" pos="0 -10 1">
+            <geom type="box" size="10 0.1 1" rgba="0.2 0.2 0.8 1"/>
+        </body>
+        <body name="wally2" mocap="true" pos="0 10 1">
+            <geom type="box" size="10 0.1 1" rgba="0.2 0.2 0.8 1"/>
+        </body>
+        <body name="wallx1" mocap="true" pos="-10 0 1">
+            <geom type="box" size="0.1 10 1" rgba="0.2 0.2 0.8 1"/>
+        </body>
+        <body name="wallx2" mocap="true" pos="10 0 1">
+            <geom type="box" size="0.1 10 1" rgba="0.2 0.2 0.8 1"/>
+        </body>
+    </worldbody>
+
+    <actuator>
+        <!-- actuators can be added here if needed -->
+    </actuator>
+    </mujoco>

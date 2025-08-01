@@ -2,6 +2,8 @@ import gymnasium as gym
 import numpy as np
 import mujoco
 import mujoco.viewer
+import mediapy as media
+import cv2
 
 class MujocoCube(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array", ], "render_fps": 30}
@@ -12,46 +14,42 @@ class MujocoCube(gym.Env):
         self.render_mode = render_mode
         # Initialize positions - will be set randomly in reset()
         # Using -1,-1, 0 as "uninitialized" state
-        self._agent_location = np.array([-1, -1, 0], dtype=np.float32)
-        self._target_location = np.array([-1, -1, 0], dtype=np.float32)
+        self._agent_location = np.array([-1, -1, 0], dtype=np.float64)
+        self._target_location = np.array([-1, -1, 0], dtype=np.float64)
 
         # Define what the agent can observe
         # Dict space gives us structured, human-readable observations
         self.space_range_min, self.space_range_max = np.array([-self.xspace, -self.yspace, 0]), np.array([self.xspace, self.yspace, 1])
         self.observation_space = gym.spaces.Dict(
             {
-                "agent": gym.spaces.Box(low=self.space_range_min, high=self.space_range_max, dtype=np.float32),
-                "target": gym.spaces.Box(low=self.space_range_min, high=self.space_range_max, dtype=np.float32),
+                "agent": gym.spaces.Box(low=self.space_range_min, high=self.space_range_max, dtype=np.float64),
+                "target": gym.spaces.Box(low=self.space_range_min, high=self.space_range_max, dtype=np.float64),
             }
         )
 
-        self.action_space = gym.spaces.Discrete(5)
-
-        # Map action numbers to actual movements on the grid
-        # This makes the code more readable than using raw numbers
+        self.action_space = gym.spaces.Discrete(9)
+        step = 1e-2
+        dstep = step / np.sqrt(2)
         self._action_to_direction = {
-            0: np.array([ .1,  0, 0]),  # Move right
-            1: np.array([ 0,  .1, 0]),  # Move up
-            2: np.array([-.1,  0, 0]),  # Move left
-            3: np.array([ 0, -.1, 0]),  # Move down
-            4: np.array([ 0,  0, .1]),  # Jump TODO: implement a force
+            0: np.array([ dstep,  dstep, 0]),  # Move right and up
+            1: np.array([ step,       0, 0]),  # Move right
+            2: np.array([ dstep, -dstep, 0]),  # Move right and down
+            3: np.array([ 0,      -step, 0]),  # Move down
+            4: np.array([-dstep, -dstep, 0]),  # Move left and down
+            5: np.array([-step,       0, 0]),   # Move left
+            6: np.array([-dstep,  dstep, 0]),   # Move left and up
+            7: np.array([ 0,       step, 0]),   # Move up
+            8: np.array([ 0,          0, step]),   # Jump TODO: implement a force
         }
         self.mujoco_model = mujoco.MjModel.from_xml_path(mujoco_file)
         self.mujoco_data = mujoco.MjData(self.mujoco_model)
-
-        self.mujoco_agent_id = self.mujoco_model.body("agent").id
-        self.mujoco_target_mocap_id = self.mujoco_model.body_mocapid[self.mujoco_model.body("target").id]
-        self.mujoco_data.body("wallx1").xpos = [-xspace, 0, 0]
-        self.mujoco_data.body("wallx2").xpos = [ xspace, 0, 0]
-        self.mujoco_data.body("wally1").xpos = [0, -yspace, 0]
-        self.mujoco_data.body("wally2").xpos = [0,  yspace, 0]
-        print(self.mujoco_data.body("wallx1").xpos)
-        print(self.mujoco_data.body("wallx2").xpos)
-        print(self.mujoco_data.body("wally1").xpos)
-        print(self.mujoco_data.body("wally2").xpos)
-        mujoco.mj_forward(self.mujoco_model, self.mujoco_data)
-        self.mujoco_renderer = mujoco.Renderer(self.mujoco_model)
-        self.mujoco_viewer = mujoco.viewer.launch_passive(self.mujoco_model, self.mujoco_data)
+        self.mujoco_agentj = self.mujoco_model.joint("agentjoint").id
+        self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wallx1").id]] = [-(xspace+0.1), 0, 0] # 0.1=size of  agent
+        self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wallx2").id]] = [ (xspace+0.1), 0, 0]
+        self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wally1").id]] = [0, -(yspace+0.1), 0]
+        self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wally2").id]] = [0,  (yspace+0.1), 0]
+        self.mujoco_viewer = None # init in reset to have target in right position
+        self.mujoco_renderer = None # init in reset to have target in right position
 
     def _get_obs(self):
         """Convert internal state to observation format.
@@ -82,21 +80,28 @@ class MujocoCube(gym.Env):
         # IMPORTANT: Must call this first to seed the random number generator
         super().reset(seed=seed)
 
-        # Randomly place the agent anywhere on the grid
-        self._agent_location = self.np_random.uniform(self.space_range_min, self.space_range_max)
+        self._agent_location = np.hstack((self.np_random.uniform(self.space_range_min[:2], self.space_range_max[:2]), 0.1)) # no rnd for z
 
-        # Randomly place target, ensuring it's different from agent position
         self._target_location = self._agent_location # just to enter the loop
         while np.array_equal(self._target_location, self._agent_location):
-            self._target_location = self.np_random.uniform(self.space_range_min, self.space_range_max)
+            self._target_location = np.hstack((self.np_random.uniform(self.space_range_min[:2], self.space_range_max[:2]), 0)) # no rnd for z
 
         observation = self._get_obs()
         info = self._get_info()
 
         if self.render_mode == "human":
-            # self.mujoco_data.mocap_pos[self.mujoco_target_mocap_id] = self._target_location
-            self.mujoco_data.body("target").xpos = self._target_location
-            mujoco.mj_forward(self.mujoco_model, self.mujoco_data)
+            self.mujoco_data.qpos[self.mujoco_agentj:self.mujoco_agentj+7] = np.hstack((self._agent_location, [1, 0, 0, 0]))
+            self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("target").id]] = self._target_location
+            # self.mujoco_viewer = mujoco.viewer.launch_passive(self.mujoco_model, self.mujoco_data)
+            self.mujoco_cam = mujoco.MjvCamera()
+            mujoco.mjv_defaultCamera(self.mujoco_cam)
+            self.mujoco_cam.distance = 13
+            self.mujoco_renderer = mujoco.Renderer(self.mujoco_model, width=1280, height=720)
+            mujoco.mj_step(self.mujoco_model, self.mujoco_data)
+            self.mujoco_renderer.update_scene(self.mujoco_data, camera=self.mujoco_cam)
+            rendered_img = self.mujoco_renderer.render()
+            cv2.imshow("Render", rendered_img)
+            cv2.waitKey(0)
 
         return observation, info
     
@@ -104,27 +109,18 @@ class MujocoCube(gym.Env):
         """Execute one timestep within the environment.
 
         Args:
-            action: The action to take (0-3 for directions)
+            action: The action to take
 
         Returns:
             tuple: (observation, reward, terminated, truncated, info)
         """
-        # Map the discrete action (0-4) to a movement direction
         direction = self._action_to_direction[action]
-
-        # Update agent position, ensuring it stays within grid bounds
-        # np.clip prevents the agent from walking off the edge
         self._agent_location = np.clip(self._agent_location + direction, self.space_range_min, self.space_range_max)
+        
+        terminated = np.linalg.norm(self._agent_location[:2] - self._target_location[:2]) < 1e-2
 
-        # Check if agent reached the target
-        terminated = np.linalg.norm(self._agent_location - self._target_location) < 1e-3
-
-        # We don't use truncation in this simple environment
-        # (could add a step limit here if desired)
         truncated = False
-
-        # Simple reward structure: +1 for reaching target, 0 otherwise
-        # Alternative: could give small negative rewards for each step to encourage efficiency
+        
         reward = 1 if terminated else 0 # TODO: code a proper one
 
         observation = self._get_obs()
@@ -135,22 +131,29 @@ class MujocoCube(gym.Env):
     def render(self):
         """Render the environment for human viewing."""
         if self.render_mode == "human":
-            self.mujoco_data.body("agent").xpos = self._agent_location
-            mujoco.mj_forward(self.mujoco_model, self.mujoco_data)
-            self.mujoco_renderer.render()
+            self.mujoco_data.qpos[self.mujoco_agentj:self.mujoco_agentj+7] = np.hstack((self._agent_location, [1, 0, 0, 0]))
+            mujoco.mj_step(self.mujoco_model, self.mujoco_data)
+
+            # self.mujoco_viewer.sync()
+            self.mujoco_renderer.update_scene(self.mujoco_data, camera=self.mujoco_cam)
+            rendered_img = self.mujoco_renderer.render()
+            cv2.imshow("Render", rendered_img)
+            ans = chr(cv2.waitKey(1) & 0xff)
+            if ans == "q":
+                quit()
 
 def train_mujoco_cube():
     gym.register(id="gymnasium_env/MujocoCube-v0", entry_point=MujocoCube, max_episode_steps=300)
-    env = gym.make("gymnasium_env/MujocoCube-v0", render_mode="human", xspace=500.0, yspace=500.0, mujoco_file="files/mujoco_files/MujocoCubeRL.xml")
+    env = gym.make("gymnasium_env/MujocoCube-v0", render_mode="human", xspace=5.0, yspace=5.0, mujoco_file="files/mujoco_files/MujocoCubeRL.xml")
+    print("Enter to start")
     obs, info = env.reset(seed=42)
     print(obs)
-
     terminated = False
     while not terminated:
         action = env.action_space.sample()
         obs, reward, terminated, truncated, info = env.step(action)
         env.render()
-        print(obs)
+        # print(obs)
 
 if __name__ == "__main__":
     train_mujoco_cube()
