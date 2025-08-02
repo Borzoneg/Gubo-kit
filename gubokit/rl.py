@@ -7,6 +7,8 @@ import cv2
 from gymnasium.wrappers import RecordEpisodeStatistics, RecordVideo
 import tqdm
 import argparse
+from stable_baselines3 import PPO
+from stable_baselines3.common.env_util import make_vec_env
 
 class MujocoCubeEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
@@ -20,8 +22,7 @@ class MujocoCubeEnv(gym.Env):
         self._agent_location = np.array([-1, -1, 0], dtype=np.float64)
         self._target_location = np.array([-1, -1, 0], dtype=np.float64)
 
-        # Define what the agent can observe
-        # Dict space gives us structured, human-readable observations
+        # define what the agent can observe
         self.space_range_min, self.space_range_max = np.array([-self.xspace, -self.yspace, 0]), np.array([self.xspace, self.yspace, 1])
         self.observation_space = gym.spaces.Dict(
             {
@@ -30,6 +31,7 @@ class MujocoCubeEnv(gym.Env):
             }
         )
 
+        # define actions and actionspace
         self.action_space = gym.spaces.Discrete(9)
         step = 1e-2
         dstep = step / np.sqrt(2)
@@ -44,21 +46,23 @@ class MujocoCubeEnv(gym.Env):
             7: np.array([ 0,       step, 0]),   # Move up
             8: np.array([ 0,          0, step]),   # Jump TODO: implement a force
         }
+        # if needed start render model and env
         if self.render_mode == "human" or self.render_mode == "rgb_array":
             self.mujoco_model = mujoco.MjModel.from_xml_path(mujoco_file)
             self.mujoco_data = mujoco.MjData(self.mujoco_model)
             self.mujoco_agentj = self.mujoco_model.joint("agentjoint").id
+            # placing walls
             self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wallx1").id]] = [-(xspace+0.1), 0, 0] # 0.1=size of  agent
             self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wallx2").id]] = [ (xspace+0.1), 0, 0]
             self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wally1").id]] = [0, -(yspace+0.1), 0]
             self.mujoco_data.mocap_pos[self.mujoco_model.body_mocapid[self.mujoco_model.body("wally2").id]] = [0,  (yspace+0.1), 0]
-            self.mujoco_viewer = None # init in reset to have target in right position
-            self.mujoco_renderer = None # init in reset to have target in right position
-            # self.mujoco_viewer = mujoco.viewer.launch_passive(self.mujoco_model, self.mujoco_data)
+            # setting up camera, does not work when using viewer
             self.mujoco_cam = mujoco.MjvCamera()
             mujoco.mjv_defaultCamera(self.mujoco_cam)
             self.mujoco_cam.distance = 13
+            # init renderer or viewer (renderer we have more contorl whereas viewer is more gui styled)
             self.mujoco_renderer = mujoco.Renderer(self.mujoco_model, width=1280, height=720)
+            # self.mujoco_viewer = mujoco.viewer.launch_passive(self.mujoco_model, self.mujoco_data)
 
     def _get_obs(self):
         """Convert internal state to observation format.
@@ -172,6 +176,78 @@ def train_mujoco_cube(render_mode):
         print(f"finished with: {info}")
     env.close()
 
+def train_mujoco_cube_ppo(render_mode):
+    render_interval = 2
+    num_episodes = 500
+    max_steps = 300
+    total_timesteps = num_episodes * max_steps
+    gym.register(
+        id="gymnasium_env/MujocoCube-v0",
+        entry_point=MujocoCubeEnv,
+        max_episode_steps=max_steps
+    )
+
+    # Create vectorized env for PPO
+    def make_env():
+        env = gym.make(
+            "gymnasium_env/MujocoCube-v0",
+            render_mode=render_mode,
+            xspace=5.0,
+            yspace=5.0,
+            mujoco_file="files/mujoco_files/MujocoCubeRL.xml"
+        )
+        if render_mode == "rgb_array":
+            env = RecordVideo(
+                env,
+                video_folder="data/out/mujoco_cube",
+                name_prefix="training",
+                episode_trigger=lambda ep_id: ep_id % render_interval == 0,
+                disable_logger=True
+            )
+        env = RecordEpisodeStatistics(env)
+        return env
+
+    env = make_vec_env(make_env, n_envs=1)
+
+    # Use PPO with MultiInputPolicy (since your obs is Dict)
+    model = PPO("MultiInputPolicy", env, verbose=1)
+    model.learn(total_timesteps=total_timesteps)
+
+    env.close()
+    return model
+
+def test_trained_agent(model, render_mode="human"):
+    env = gym.make(
+        "gymnasium_env/MujocoCube-v0",
+        render_mode=render_mode,
+        xspace=5.0,
+        yspace=5.0,
+        mujoco_file="files/mujoco_files/MujocoCubeRL.xml"
+    )
+
+    obs, _ = env.reset()
+    done = False
+    total_reward = 0
+
+    while not done:
+        action, _ = model.predict(obs, deterministic=True)
+        print(action)
+        obs, reward, terminated, truncated, info = env.step(action)
+        total_reward += reward
+        done = terminated or truncated
+
+        if render_mode == "human":
+            env.render()
+        elif render_mode == "rgb_array":
+            frame = env.render()
+            cv2.imshow("Agent", frame[..., ::-1])  # Convert RGB to BGR for OpenCV
+            if cv2.waitKey(50) & 0xFF == ord("q"):
+                break
+
+    env.close()
+    if render_mode == "rgb_array":
+        cv2.destroyAllWindows()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Set render mode")
     group = parser.add_mutually_exclusive_group()
@@ -183,4 +259,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     print(f"Render mode is: {args.render_mode}")
-    train_mujoco_cube(args.render_mode)
+    model = train_mujoco_cube_ppo(args.render_mode)
+    test_trained_agent(model=model)
