@@ -9,6 +9,10 @@ import tqdm
 import argparse
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from collections import namedtuple
 
 class MujocoCubeEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
@@ -129,6 +133,7 @@ class MujocoCubeEnv(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
 
+
         return observation, reward, terminated, truncated, info
 
     def render(self):
@@ -148,11 +153,32 @@ class MujocoCubeEnv(gym.Env):
                 ans = chr(cv2.waitKey(1) & 0xff)
                 if ans == "q":
                     quit()
-            
+        else:
+            print(f"Agent: {self._agent_location}, target: {self._target_location} info: {self._get_info()}")
+          
+class PPO:
+    def __init__(self, env, lr, gamma, clip):
+        pass
+
+    def get_action(self):
+        pass
+
+    def update(self):
+        pass
+
+    def store_transition(self, obs, action, reward, ep_over, log_prob, value):
+        pass
+    
 def train_mujoco_cube(render_mode):
+    """ ======= TRAINING HYPERPARAMS ======= """
+    timesteps_per_batch = 4800
+    n_updates_per_iteration = 5
     render_interval = 2
-    num_training_episodes = 5
-    gym.register(id="gymnasium_env/MujocoCube-v0", entry_point=MujocoCubeEnv, max_episode_steps=300)
+    n_episodes = 5
+    max_episode_steps = 300
+
+    """ ======= ENV INIT ======= """
+    gym.register(id="gymnasium_env/MujocoCube-v0", entry_point=MujocoCubeEnv, max_episode_steps=max_episode_steps)
     env = gym.make("gymnasium_env/MujocoCube-v0", render_mode=render_mode, xspace=5.0, yspace=5.0, mujoco_file="files/mujoco_files/MujocoCubeRL.xml")
     if render_mode == "rgb_array":
         env = RecordVideo(
@@ -162,91 +188,36 @@ def train_mujoco_cube(render_mode):
             episode_trigger=lambda x: x % render_interval == 0  # Only record every 250th episode
         )
     env = RecordEpisodeStatistics(env)
-    for i in range(num_training_episodes):
+    
+    """ ======= AGENT INIT ======= """
+    agent = PPO(
+        env=env,
+        lr = 0.005,
+        gamma = 0.95,
+        clip = 0.2,)
+
+    t, crnt_ep = 0, 1
+    while t < (n_episodes*max_episode_steps):
         obs, info = env.reset()
-        print(f"=====Episode {i:02d}=====")
+        print(f"=====Episode {crnt_ep:02d}=====")
         print(f"starting with: {obs}")
         ep_over = False
         while not ep_over:
-            action = env.action_space.sample()
-            obs, reward, terminated, truncated, info = env.step(i)
+            action, log_prob, value = agent.get_action(obs)
+            next_obs, reward, terminated, truncated, info = env.step(action)
             ep_over = terminated or truncated
+            agent.store_transition(obs, action, reward, ep_over, log_prob, value)
+            obs = next_obs
+            t += 1
+            if (t % timesteps_per_batch) == 0:
+                for _ in range(n_updates_per_iteration):
+                    agent.update()
             if render_mode == "human":
                 env.render()
+            
+        crnt_ep += 1
         print(f"finished with: {info}")
     env.close()
-
-def train_mujoco_cube_ppo(render_mode):
-    render_interval = 2
-    num_episodes = 500
-    max_steps = 300
-    total_timesteps = num_episodes * max_steps
-    gym.register(
-        id="gymnasium_env/MujocoCube-v0",
-        entry_point=MujocoCubeEnv,
-        max_episode_steps=max_steps
-    )
-
-    # Create vectorized env for PPO
-    def make_env():
-        env = gym.make(
-            "gymnasium_env/MujocoCube-v0",
-            render_mode=render_mode,
-            xspace=5.0,
-            yspace=5.0,
-            mujoco_file="files/mujoco_files/MujocoCubeRL.xml"
-        )
-        if render_mode == "rgb_array":
-            env = RecordVideo(
-                env,
-                video_folder="data/out/mujoco_cube",
-                name_prefix="training",
-                episode_trigger=lambda ep_id: ep_id % render_interval == 0,
-                disable_logger=True
-            )
-        env = RecordEpisodeStatistics(env)
-        return env
-
-    env = make_vec_env(make_env, n_envs=1)
-
-    # Use PPO with MultiInputPolicy (since your obs is Dict)
-    model = PPO("MultiInputPolicy", env, verbose=1)
-    model.learn(total_timesteps=total_timesteps)
-
-    env.close()
-    return model
-
-def test_trained_agent(model, render_mode="human"):
-    env = gym.make(
-        "gymnasium_env/MujocoCube-v0",
-        render_mode=render_mode,
-        xspace=5.0,
-        yspace=5.0,
-        mujoco_file="files/mujoco_files/MujocoCubeRL.xml"
-    )
-
-    obs, _ = env.reset()
-    done = False
-    total_reward = 0
-
-    while not done:
-        action, _ = model.predict(obs, deterministic=True)
-        print(action)
-        obs, reward, terminated, truncated, info = env.step(action)
-        total_reward += reward
-        done = terminated or truncated
-
-        if render_mode == "human":
-            env.render()
-        elif render_mode == "rgb_array":
-            frame = env.render()
-            cv2.imshow("Agent", frame[..., ::-1])  # Convert RGB to BGR for OpenCV
-            if cv2.waitKey(50) & 0xFF == ord("q"):
-                break
-
-    env.close()
-    if render_mode == "rgb_array":
-        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Set render mode")
@@ -259,5 +230,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     print(f"Render mode is: {args.render_mode}")
-    model = train_mujoco_cube_ppo(args.render_mode)
-    test_trained_agent(model=model)
+    model = train_mujoco_cube(args.render_mode)
+    # test_trained_agent(model=model)
