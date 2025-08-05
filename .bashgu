@@ -21,9 +21,10 @@ export PYTHONPATH="${PYTHONPATH}:$GUBOKIT"
 alias gu_edit="code $GUBOKIT/.bashgu"
 
 # vscode source automatically source only if it's not sourced (in a terminal)
-if [[ -z "$VIRTUAL_ENV" ]]; then
-  source ~/pyenv/bin/activate
-fi
+source ~/pyenv/bin/activate
+# if [[ -z "$VIRTUAL_ENV" ]]; then
+#   source ~/pyenv/bin/activate
+# fi
 
 alias gu_py="python3 -i $GUBOKIT/gubokit/py_test_env.py"
 
