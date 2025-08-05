@@ -19,7 +19,7 @@
 
     <worldbody>
         <geom name="ground" type="plane" pos="0 0 0" size="10 10 .1" material="grid"/>
-        <camera name="top" pos="0 -20 18" euler="45 0 0"/>
+        <camera name="top" pos="0 0 18" euler="0 0 0"/>
 
         <!-- Free moving cube -->
         <body name="agent" pos="0 0 0.1">

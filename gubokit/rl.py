@@ -34,6 +34,7 @@ class MujocoCubeEnv(gym.Env):
                                                 high=np.concatenate([self.space_range_max, self.space_range_max]),
                                                 dtype=np.float64)
 
+        self.goal_thrshold = 1e-2
         # define actions and actionspace
         step = 5e-2
         dstep = step / np.sqrt(2)
@@ -125,10 +126,11 @@ class MujocoCubeEnv(gym.Env):
         direction = self._action_to_direction[action]
         self._agent_location = np.clip(self._agent_location + direction, self.space_range_min, self.space_range_max)
         distance = np.linalg.norm(self._agent_location[:2] - self._target_location[:2])
+        terminated = (distance < self.goal_thrshold)
+        # distance = max(distance, self.goal_thrshold)
         norm_distance = distance / (np.linalg.norm([2 * self.xspace, 2 * self.yspace]))
-        terminated = (distance < 1e-2)
         truncated = False
-        reward = -(norm_distance)**2 + int(terminated)
+        reward = -(distance) + int(terminated)
         observation = self._get_obs()
         info = self._get_info()
         return observation, reward, terminated, truncated, info
@@ -142,7 +144,7 @@ class MujocoCubeEnv(gym.Env):
                 self.mujoco_viewer.sync()
             else:
                 rendered_img = self.mujoco_renderer.render()
-                self.mujoco_renderer.update_scene(self.mujoco_data, camera=self.mujoco_cam)
+                self.mujoco_renderer.update_scene(self.mujoco_data, camera='top')
                 if self.render_mode == "rgb_array": # if rgb array we need to return an image
                     return rendered_img
                     # return cv2.cvtColor(rendered_img, cv2.COLOR_BGR2RGB)
@@ -256,8 +258,8 @@ def train_mujoco_cube(render_mode):
     """ ======= TRAINING HYPERPARAMS ======= """
     timesteps_per_batch = 2048
     n_updates_per_iteration = 5
-    render_interval = 200
-    n_episodes = 200
+    render_interval = 50
+    t_training = 1e6
     max_episode_steps = 5000
 
     """ ======= ENV INIT ======= """
@@ -284,10 +286,10 @@ def train_mujoco_cube(render_mode):
 
     t, crnt_ep = 0, 1
     distances = []
-    while t < (n_episodes*max_episode_steps):
+    while t < t_training:
         obs, info = env.reset()
-        # print(f"=====Episode {crnt_ep:02d}=====")
-        # print(f"starting with: {obs}")
+        print(f"=====Episode {crnt_ep:02d}=====")
+        print(f"starting with: {obs}")
         ep_over = False
         dist_ep = []
         while not ep_over:
@@ -299,7 +301,7 @@ def train_mujoco_cube(render_mode):
             ep_over = terminated or truncated
             agent.store_transition(obs, action, reward, ep_over, log_prob, value)
             obs = next_obs
-            print(f"{t:06d}/{(n_episodes*max_episode_steps):06d}", end='\r')
+            # print(f"{t:06d}/{t_training:06d}", end='\r')
             t += 1
             if (t % timesteps_per_batch) == 0:
                 agent.update()
@@ -307,12 +309,9 @@ def train_mujoco_cube(render_mode):
                 env.render()
         crnt_ep += 1
         distances.append(dist_ep)
-        # print(f"finished with: {info}")
+        print(f"finished with: {info}")
     env.close()
-    for ep_d in distances:
-        plt.plot(range(len(ep_d)), ep_d)
-        plt.show()
-
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Set render mode")
     group = parser.add_mutually_exclusive_group()
