@@ -128,7 +128,7 @@ class MujocoCubeEnv(gym.Env):
         norm_distance = distance / (np.linalg.norm([2 * self.xspace, 2 * self.yspace]))
         truncated = False
         if terminated:
-            reward = int(terminated)
+            reward = 0.1
         else:
             reward = -(distance)
         observation = self._get_obs()
@@ -259,7 +259,7 @@ def train_mujoco_cube(render_mode):
     timesteps_per_batch = 2048
     n_updates_per_iteration = 5
     render_interval = 50
-    t_training = 1e6
+    t_training = 3e6
     max_episode_steps = 5000
 
     """ ======= ENV INIT ======= """
