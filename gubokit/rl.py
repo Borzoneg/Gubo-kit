@@ -7,8 +7,6 @@ import cv2
 from gymnasium.wrappers import RecordEpisodeStatistics, RecordVideo
 import tqdm
 import argparse
-from stable_baselines3 import PPO
-from stable_baselines3.common.env_util import make_vec_env
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -127,10 +125,12 @@ class MujocoCubeEnv(gym.Env):
         self._agent_location = np.clip(self._agent_location + direction, self.space_range_min, self.space_range_max)
         distance = np.linalg.norm(self._agent_location[:2] - self._target_location[:2])
         terminated = (distance < self.goal_thrshold)
-        # distance = max(distance, self.goal_thrshold)
         norm_distance = distance / (np.linalg.norm([2 * self.xspace, 2 * self.yspace]))
         truncated = False
-        reward = -(distance) + int(terminated)
+        if terminated:
+            reward = int(terminated)
+        else:
+            reward = -(distance)
         observation = self._get_obs()
         info = self._get_info()
         return observation, reward, terminated, truncated, info
