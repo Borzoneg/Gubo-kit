@@ -7,8 +7,6 @@ import matplotlib.pyplot as plt
 from numpy import ndarray
 import csv
 import json
-from gubokit import ros
-import rclpy
 import whisper
 import sounddevice
 import vosk
