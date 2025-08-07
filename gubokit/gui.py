@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
 
-
 class BoundingBoxEditor:
     def __init__(self, canvas, frame, tag='', move_color='blue'):
         self.canvas = canvas

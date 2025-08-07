@@ -199,7 +199,7 @@ class BtViewer():
 
 class GenericRosBehaviour(pt.behaviour.Behaviour):
     """
-    Most of the behaviors are doing the same thing: they send a service requests, wait for answer and change the 
+    A base behaviour that send a service requests, wait for answer and change the 
     blackboard accordingly the name of the behavior is also the name of the service 
     """
     def __init__(self, name, blackboard, logger, client=None):
