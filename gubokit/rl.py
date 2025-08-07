@@ -124,6 +124,7 @@ class MujocoCubeEnv(gym.Env):
         direction = self._action_to_direction[action]
         self._agent_location = np.clip(self._agent_location + direction, self.space_range_min, self.space_range_max)
         distance = np.linalg.norm(self._agent_location[:2] - self._target_location[:2])
+        distance = max(distance, self.goal_thrshold*0.1)
         terminated = (distance < self.goal_thrshold)
         norm_distance = distance / (np.linalg.norm([2 * self.xspace, 2 * self.yspace]))
         truncated = False
