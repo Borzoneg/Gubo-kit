@@ -32,7 +32,7 @@ class MujocoCubeEnv(gym.Env):
                                                 high=np.concatenate([self.space_range_max, self.space_range_max]),
                                                 dtype=np.float64)
 
-        self.goal_thrshold = 1e-2
+        self.goal_thrshold = 1e-1
         # define actions and actionspace
         step = 5e-2
         dstep = step / np.sqrt(2)
