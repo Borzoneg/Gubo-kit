@@ -1,6 +1,7 @@
 PS1="\[\033[01;32m\]\w$ \[\033[0m\]"
 export ISAACPATH="$HOME/.local/share/ov/pkg/isaac-sim-2023.1.1"
 export GUBOKIT="$HOME/Gubo-kit"
+export GUBOKITCPP="$HOME/Gubo-kit-Cpp"
 
 
 ros_paths=(
@@ -39,12 +40,8 @@ alias mem_thrift="cd $HOME/fluently_ws && ./hfc-thrift/bin/run_server -p 7070 fl
 
 
 git_paths=(
-          "$HOME/knowledge-transfer-fleuntly"
+          "$HOME/Gubo-kit-Cpp"
           "$HOME/Gubo-kit"
-          "$HOME/fluently_ws/fluently_mem"
-          "$HOME/fluently_ws/ros/supsi-pa"
-          "$HOME/Project_cdt"
-          "$HOME/fluently_ws/fluently_bernd"
           )
 
 isaac_py(){
@@ -73,4 +70,10 @@ lazy_git_status(){
      done
 }
 
+# for c++
+source "$GUBOKITCPP/ros2_ws/install/setup.bash" 
 
+gubo_build_and_run(){
+     cmake --build build
+     ./build/"$*"
+}
