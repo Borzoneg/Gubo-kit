@@ -16,7 +16,8 @@ for path in "${ros_paths[@]}"; do
 done
 
 source "$GUBOKIT/ros_ws/install/setup.bash"
-export ROS_LOCALHOST_ONLY=1
+unset ROS_LOCALHOST_ONLY
+export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
 export PYTHONPATH="${PYTHONPATH}:$GUBOKIT"
 
 alias gu_edit="code $GUBOKIT/.bashgu"
