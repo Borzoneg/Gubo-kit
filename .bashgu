@@ -9,14 +9,13 @@ ros_paths=(
           "/opt/ros/jazzy/setup.bash"
           )
 
-for path in "${ros_paths[@]}"; do
-     if [ -f "$path" ]; then
-          source $path
-     fi
-done
+# for path in "${ros_paths[@]}"; do
+#      if [ -f "$path" ]; then
+#           source $path
+#      fi
+# done
 
-source "$GUBOKIT/ros_ws/install/setup.bash"
-unset ROS_LOCALHOST_ONLY
+# source "$GUBOKIT/ros_ws/install/setup.bash"
 export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
 export PYTHONPATH="${PYTHONPATH}:$GUBOKIT"
 
@@ -39,6 +38,9 @@ alias blender="cd $HOME/blender-4.4.3-linux-x64 && ./blender"
 alias fluently_thrift="cd $HOME/fluently_ws && ./hfc-thrift/bin/startServer.sh -p 7070 fluently_ontology/fluently.yml"
 alias mem_thrift="cd $HOME/fluently_ws && ./hfc-thrift/bin/run_server -p 7070 fluently-sdu/src/main/resources/ontology/fluently.yml"
 
+alias start_jazzy_docker="docker run -it --rm --name ros2_jazzy_dev -u "$(id -u)":"$(id -g)" -v /home/gu/Gubo-kit-Cpp/ros2_ws:/ros_ws -w /ros_ws my_ros_jazzy:dev bash"
+alias start_jazzy_terminal="docker exec -it ros2_jazzy_dev bash"
+alias commit_jazzy_docker="docker commit ros2_jazzy_dev my_ros_jazzy:dev"
 
 git_paths=(
           "$HOME/Gubo-kit-Cpp"
@@ -72,7 +74,7 @@ lazy_git_status(){
 }
 
 # for c++
-source "$GUBOKITCPP/ros2_ws/install/setup.bash" 
+# source "$GUBOKITCPP/ros2_ws/install/setup.bash" 
 
 gubo_build_and_run(){
      cmake --build build
